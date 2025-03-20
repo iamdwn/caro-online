@@ -1,0 +1,63 @@
+# Ignore Node.js modules (React)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Ignore build output
+build/
+dist/
+.DS_Store
+
+# Ignore environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Ignore package-lock and yarn.lock (if using npm or yarn separately)
+package-lock.json
+yarn.lock
+
+# Ignore Visual Studio specific files
+.vs/
+.vscode/
+*.code-workspace
+
+# Ignore .NET build output
+bin/
+obj/
+out/
+*.exe
+*.dll
+*.pdb
+*.log
+*.cache
+
+# Ignore ASP.NET secrets folder (Windows)
+%APPDATA%/Microsoft/UserSecrets/
+**/secrets.json
+
+# Ignore Entity Framework Migrations history
+Migrations/
+
+# Ignore Visual Studio Code settings
+.vscode/
+*.suo
+*.user
+*.cache
+*.db
+*.opendb
+
+# Ignore ReSharper files
+*.DotSettings.user
+_ReSharper*/
+*.sln.DotSettings
+
+# Ignore temporary files
+*.bak
+*.tmp
+*.swp
+*.sln.ide
+*.ipch

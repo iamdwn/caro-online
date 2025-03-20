@@ -33,7 +33,6 @@ namespace caro_online.Services
                 LogRoomsInfo("BroadcastAvailableRooms", rooms);
                 await _hubContext.Clients.All.SendAsync("AvailableRooms", rooms);
                 
-                // Broadcast lại sau 1 giây để đảm bảo client nhận được
                 await Task.Delay(1000);
                 await _hubContext.Clients.All.SendAsync("AvailableRooms", rooms);
             }
@@ -53,17 +52,14 @@ namespace caro_online.Services
             Game game;
             lock (_lock)
             {
-                // Kiểm tra xem phòng có tồn tại không
                 if (_games.TryGetValue(roomName, out var existingGame))
                 {
-                    // Nếu phòng tồn tại và người tạo là người đang yêu cầu
                     if (existingGame.Player1Name == playerName)
                     {
-                        // Đảm bảo phòng vẫn ở trạng thái chờ
                         existingGame.Status = "Waiting";
                         _games.TryUpdate(roomName, existingGame, existingGame);
                         LogGameInfo("ReconnectGame", existingGame);
-                        // Broadcast ngay khi reconnect thành công
+
                         _ = BroadcastAvailableRooms();
                         return existingGame;
                     }
@@ -89,7 +85,6 @@ namespace caro_online.Services
                 LogGameInfo("CreateGame", game);
             }
 
-            // Broadcast ngay khi tạo phòng thành công
             await BroadcastAvailableRooms();
             return game;
         }
@@ -151,7 +146,6 @@ namespace caro_online.Services
                 LogRoomsInfo("GetAvailableRooms", rooms);
             }
 
-            // Broadcast để đảm bảo tất cả client có danh sách mới nhất
             await BroadcastAvailableRooms();
             return rooms;
         }
@@ -226,13 +220,10 @@ namespace caro_online.Services
                     throw new Exception("Ô này đã được đánh");
                 }
 
-                // Đánh dấu nước đi (1 cho X, 2 cho O)
                 game.Board[index] = playerId == game.Player1Id ? 1 : 2;
 
-                // Chuyển lượt
                 game.CurrentTurn = playerId == game.Player1Id ? game.Player2Id : game.Player1Id;
 
-                // Kiểm tra thắng thua
                 CheckWinner(game, row, col);
 
                 _games.TryUpdate(game.RoomName, game, game);
@@ -283,7 +274,7 @@ namespace caro_online.Services
 
                 if (count >= 5)
                 {
-                    game.Winner = lastPlayerId; // Người thắng là người vừa đánh
+                    game.Winner = lastPlayerId;
                     game.Status = GameStatus.Finished.ToString();
                     AddFinishedGame(game);
                     _hubContext.Clients.All.SendAsync("GameFinished", game);
@@ -335,7 +326,7 @@ namespace caro_online.Services
         public void AddFinishedGame(Game game)
         {
             _finishedGames.TryAdd(game.Id, game);
-            // Giới hạn số lượng game kết thúc được lưu (ví dụ: 50 game)
+
             if (_finishedGames.Count > 50)
             {
                 var oldestGame = _finishedGames.Values

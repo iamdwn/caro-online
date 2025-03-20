@@ -78,32 +78,69 @@ export const Game: React.FC = () => {
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        gameService.onError((message) => {
-            console.error('Error:', message);
-            alert(message);
-        });
+        const setupGameEvents = async () => {
+            try {
+                // Lắng nghe sự kiện khi có phòng mới được tạo
+                gameService.onGameCreated((game) => {
+                    console.log('Game created event:', game);
+                    if (game && game.status === "Waiting") {
+                        setAvailableRooms(prev => {
+                            // Kiểm tra xem phòng đã tồn tại chưa
+                            const exists = prev.some(room => room.roomName === game.roomName);
+                            if (!exists) {
+                                console.log('Adding new room:', game);
+                                return [...prev, game];
+                            }
+                            return prev;
+                        });
+                    }
+                });
 
-        // Cập nhật danh sách phòng mỗi 5 giây
-        const interval = setInterval(updateAvailableRooms, 5000);
-        
-        // Cập nhật danh sách phòng ngay khi component mount
-        updateAvailableRooms();
-        
-        return () => clearInterval(interval);
+                // Lắng nghe sự kiện khi có người tham gia phòng
+                gameService.onGameJoined((game) => {
+                    console.log('Game joined event:', game);
+                    if (game) {
+                        setAvailableRooms(prev => 
+                            prev.filter(room => room.roomName !== game.roomName)
+                        );
+                    }
+                });
+
+                // Lắng nghe sự kiện cập nhật danh sách phòng
+                gameService.onAvailableRooms((rooms) => {
+                    console.log('Available rooms event:', rooms);
+                    if (Array.isArray(rooms)) {
+                        setAvailableRooms(prev => {
+                            // Lọc ra các phòng không trùng lặp
+                            const newRooms = rooms.filter(newRoom => 
+                                !prev.some(existingRoom => existingRoom.roomName === newRoom.roomName)
+                            );
+                            // Kết hợp danh sách cũ và mới
+                            return [...prev, ...newRooms].filter(room => room.status === "Waiting");
+                        });
+                    }
+                    setIsLoading(false);
+                });
+
+                gameService.onError((message) => {
+                    console.error('Error:', message);
+                    alert(message);
+                });
+
+                // Lấy danh sách phòng lần đầu
+                await gameService.getAvailableRooms();
+            } catch (error) {
+                console.error('Setup error:', error);
+                setIsLoading(false);
+            }
+        };
+
+        setupGameEvents();
+
+        return () => {
+            // Cleanup nếu cần
+        };
     }, []);
-
-    const updateAvailableRooms = async () => {
-        try {
-            setIsLoading(true);
-            const rooms = await gameService.getAvailableRooms();
-            setAvailableRooms(rooms || []);
-        } catch (error) {
-            console.error('Error fetching rooms:', error);
-            setAvailableRooms([]);
-        } finally {
-            setIsLoading(false);
-        }
-    };
 
     const handleCreateGame = async () => {
         if (!playerName) {
@@ -114,11 +151,22 @@ export const Game: React.FC = () => {
             alert('Vui lòng nhập tên phòng');
             return;
         }
+
+        // Kiểm tra xem tên phòng đã tồn tại chưa
+        if (availableRooms.some(room => room.roomName === roomName)) {
+            alert('Tên phòng đã tồn tại');
+            return;
+        }
+
         try {
+            setIsLoading(true);
             await gameService.createGame(playerName, roomName);
+            setRoomName(''); // Clear room name after creating
         } catch (error) {
             console.error('Create game error:', error);
             alert('Không thể tạo game');
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -128,10 +176,13 @@ export const Game: React.FC = () => {
             return;
         }
         try {
+            setIsLoading(true);
             await gameService.joinGame(roomName, playerName);
         } catch (error) {
             console.error('Join game error:', error);
             alert('Không thể tham gia game');
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -156,12 +207,14 @@ export const Game: React.FC = () => {
                     />
                 </div>
                 <div style={{ marginTop: '10px', display: 'flex', gap: '10px' }}>
-                    <Button onClick={handleCreateGame}>Tạo phòng mới</Button>
+                    <Button onClick={handleCreateGame} disabled={isLoading}>
+                        {isLoading ? 'Đang xử lý...' : 'Tạo phòng mới'}
+                    </Button>
                 </div>
             </JoinGameForm>
 
             <RoomList>
-                <h3>Danh sách phòng đang chờ</h3>
+                <h3>Danh sách phòng đang chờ ({availableRooms.length})</h3>
                 {isLoading ? (
                     <div>Đang tải danh sách phòng...</div>
                 ) : availableRooms.length === 0 ? (
@@ -173,8 +226,11 @@ export const Game: React.FC = () => {
                                 <RoomName>Tên phòng: {room.roomName}</RoomName>
                                 <RoomCreator>Người tạo: {room.player1Name}</RoomCreator>
                             </RoomInfo>
-                            <Button onClick={() => handleJoinGame(room.roomName)}>
-                                Tham gia
+                            <Button 
+                                onClick={() => handleJoinGame(room.roomName)}
+                                disabled={isLoading}
+                            >
+                                {isLoading ? 'Đang xử lý...' : 'Tham gia'}
                             </Button>
                         </RoomItem>
                     ))

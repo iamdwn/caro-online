@@ -30,7 +30,6 @@ builder.Services.AddCors(options =>
 // Add SignalR
 builder.Services.AddSignalR();
 
-// Đăng ký các services
 builder.Services.AddScoped<IGameService, GameService>();
 
 var app = builder.Build();
@@ -42,7 +41,6 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-// Đặt UseCors trước UseRouting và UseEndpoints
 app.UseCors();
 
 app.UseRouting();

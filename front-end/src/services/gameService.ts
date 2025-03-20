@@ -4,6 +4,9 @@ import { Game } from '../types/game';
 class GameService {
     private connection: HubConnection | null = null;
     private errorCallback: ((message: string) => void) | null = null;
+    private gameCreatedCallback: ((game: Game) => void) | null = null;
+    private gameJoinedCallback: ((game: Game) => void) | null = null;
+    private availableRoomsCallback: ((rooms: Game[]) => void) | null = null;
 
     constructor() {
         this.ensureConnection();
@@ -25,14 +28,23 @@ class GameService {
 
             this.connection.on('gameCreated', (game: Game) => {
                 console.log('Game created:', game);
+                if (this.gameCreatedCallback) {
+                    this.gameCreatedCallback(game);
+                }
             });
 
             this.connection.on('gameJoined', (game: Game) => {
                 console.log('Game joined:', game);
+                if (this.gameJoinedCallback) {
+                    this.gameJoinedCallback(game);
+                }
             });
 
             this.connection.on('availableRooms', (rooms: Game[]) => {
                 console.log('Available rooms:', rooms);
+                if (this.availableRoomsCallback) {
+                    this.availableRoomsCallback(rooms);
+                }
             });
 
             this.connection.on('error', (message: string) => {
@@ -54,6 +66,18 @@ class GameService {
         this.errorCallback = callback;
     }
 
+    public onGameCreated(callback: (game: Game) => void) {
+        this.gameCreatedCallback = callback;
+    }
+
+    public onGameJoined(callback: (game: Game) => void) {
+        this.gameJoinedCallback = callback;
+    }
+
+    public onAvailableRooms(callback: (rooms: Game[]) => void) {
+        this.availableRoomsCallback = callback;
+    }
+
     public async createGame(playerName: string, roomName: string): Promise<void> {
         await this.ensureConnection();
         if (this.connection) {
@@ -68,12 +92,11 @@ class GameService {
         }
     }
 
-    public async getAvailableRooms(): Promise<Game[]> {
+    public async getAvailableRooms(): Promise<void> {
         await this.ensureConnection();
         if (this.connection) {
-            return await this.connection.invoke<Game[]>('GetAvailableRooms');
+            await this.connection.invoke('GetAvailableRooms');
         }
-        return [];
     }
 }
 

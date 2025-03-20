@@ -7,13 +7,6 @@ using System.Collections.Generic;
 
 namespace caro_online.Services
 {
-    public interface IGameService
-    {
-        Task<Game> CreateGame(string playerName, string roomName);
-        Task<Game> JoinGame(string roomName, string playerName);
-        Task<IEnumerable<Game>> GetAvailableRooms();
-    }
-
     public class GameService : IGameService
     {
         private readonly ConcurrentDictionary<string, Game> _games = new();
@@ -36,7 +29,9 @@ namespace caro_online.Services
                 RoomName = roomName,
                 Player1Id = Guid.NewGuid().ToString(),
                 Player1Name = playerName,
-                Status = "Waiting"
+                Status = "Waiting",
+                Board = new int[225],
+                CreatedAt = DateTime.UtcNow
             };
 
             if (!_games.TryAdd(roomName, game))
@@ -44,10 +39,17 @@ namespace caro_online.Services
                 throw new Exception("Không thể tạo phòng");
             }
 
-            // Log để debug
             Console.WriteLine($"Created game: {game.RoomName} by {game.Player1Name}");
+            Console.WriteLine($"Game ID: {game.Id}");
             Console.WriteLine($"Total games: {_games.Count}");
             Console.WriteLine($"Available rooms: {_games.Values.Count(g => g.Status == "Waiting")}");
+            Console.WriteLine("All rooms:");
+            foreach (var room in _games.Values)
+            {
+                Console.WriteLine($"- Room: {room.RoomName}, Status: {room.Status}, Creator: {room.Player1Name}");
+            }
+            
+            Console.WriteLine($"Game details: {System.Text.Json.JsonSerializer.Serialize(game)}");
 
             return game;
         }
@@ -72,11 +74,19 @@ namespace caro_online.Services
             game.Player2Id = Guid.NewGuid().ToString();
             game.Player2Name = playerName;
             game.Status = "InProgress";
+            game.CurrentTurn = game.Player1Id;
 
-            // Log để debug
             Console.WriteLine($"Player {playerName} joined room {roomName}");
+            Console.WriteLine($"Game ID: {game.Id}");
             Console.WriteLine($"Total games: {_games.Count}");
             Console.WriteLine($"Available rooms: {_games.Values.Count(g => g.Status == "Waiting")}");
+            Console.WriteLine("All rooms:");
+            foreach (var room in _games.Values)
+            {
+                Console.WriteLine($"- Room: {room.RoomName}, Status: {room.Status}, Creator: {room.Player1Name}");
+            }
+            
+            Console.WriteLine($"Game details: {System.Text.Json.JsonSerializer.Serialize(game)}");
 
             return game;
         }
@@ -85,11 +95,16 @@ namespace caro_online.Services
         {
             var rooms = _games.Values.Where(g => g.Status == "Waiting").ToList();
             
-            // Log để debug
             Console.WriteLine($"GetAvailableRooms called. Found {rooms.Count} rooms");
+            Console.WriteLine("Available rooms:");
             foreach (var room in rooms)
             {
-                Console.WriteLine($"Room: {room.RoomName}, Created by: {room.Player1Name}");
+                Console.WriteLine($"- Room: {room.RoomName}, Creator: {room.Player1Name}");
+            }
+            Console.WriteLine("All rooms:");
+            foreach (var room in _games.Values)
+            {
+                Console.WriteLine($"- Room: {room.RoomName}, Status: {room.Status}, Creator: {room.Player1Name}");
             }
 
             return rooms;

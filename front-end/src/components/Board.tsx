@@ -22,10 +22,10 @@ const PlayerInfo = styled.div`
     margin-bottom: 20px;
 `;
 
-const Player = styled.div<{ isCurrentTurn?: boolean }>`
+const Player = styled.div<{ $isCurrentTurn?: boolean }>`
     padding: 10px;
     border-radius: 5px;
-    background-color: ${props => props.isCurrentTurn ? '#e3f2fd' : 'transparent'};
+    background-color: ${props => props.$isCurrentTurn ? '#e3f2fd' : 'transparent'};
 `;
 
 const Grid = styled.div`
@@ -36,7 +36,7 @@ const Grid = styled.div`
     padding: 1px;
 `;
 
-const Cell = styled.div<{ isWinningCell?: boolean }>`
+const Cell = styled.div<{ $isWinningCell?: boolean }>`
     width: 40px;
     height: 40px;
     background-color: white;
@@ -51,7 +51,7 @@ const Cell = styled.div<{ isWinningCell?: boolean }>`
         background-color: #f5f5f5;
     }
 
-    ${props => props.isWinningCell && `
+    ${props => props.$isWinningCell && `
         background-color: #81c784;
         color: white;
     `}
@@ -106,11 +106,11 @@ export const Board: React.FC<BoardProps> = ({ game, currentPlayerId, onCellClick
             </GameInfo>
 
             <PlayerInfo>
-                <Player isCurrentTurn={game.currentTurn === game.player1Id}>
+                <Player $isCurrentTurn={game.currentTurn === game.player1Id}>
                     <strong>X</strong> - {game.player1Name}
                     {currentPlayerId === game.player1Id && ' (Bạn)'}
                 </Player>
-                <Player isCurrentTurn={game.currentTurn === game.player2Id}>
+                <Player $isCurrentTurn={game.currentTurn === game.player2Id}>
                     <strong>O</strong> - {game.player2Name || 'Đang chờ...'}
                     {currentPlayerId === game.player2Id && ' (Bạn)'}
                 </Player>

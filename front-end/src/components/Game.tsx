@@ -73,14 +73,72 @@ const RoomCreator = styled.div`
 `;
 
 export const Game: React.FC = () => {
-    const [playerName, setPlayerName] = useState('');
+    // Tạo một ID duy nhất cho mỗi tab
+    const [tabId] = useState(() => Math.random().toString(36).substring(7));
+    const [playerName, setPlayerName] = useState(() => localStorage.getItem('playerName') || '');
     const [roomName, setRoomName] = useState('');
     const [availableRooms, setAvailableRooms] = useState<GameType[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [currentGame, setCurrentGame] = useState<GameType | null>(null);
-    const [currentPlayerId, setCurrentPlayerId] = useState<string | null>(null);
+    const [currentGame, setCurrentGame] = useState<GameType | null>(() => {
+        const savedGame = localStorage.getItem(`currentGame_${tabId}`);
+        return savedGame ? JSON.parse(savedGame) : null;
+    });
+    const [currentPlayerId, setCurrentPlayerId] = useState<string | null>(() => 
+        localStorage.getItem(`currentPlayerId_${tabId}`)
+    );
+
+    // Lưu playerName khi thay đổi (dùng chung cho tất cả các tab)
+    useEffect(() => {
+        if (playerName) {
+            localStorage.setItem('playerName', playerName);
+        }
+    }, [playerName]);
+
+    // Lưu thông tin game hiện tại cho tab này
+    useEffect(() => {
+        if (currentGame) {
+            localStorage.setItem(`currentGame_${tabId}`, JSON.stringify(currentGame));
+        } else {
+            localStorage.removeItem(`currentGame_${tabId}`);
+        }
+    }, [currentGame, tabId]);
+
+    // Lưu currentPlayerId cho tab này
+    useEffect(() => {
+        if (currentPlayerId) {
+            localStorage.setItem(`currentPlayerId_${tabId}`, currentPlayerId);
+        } else {
+            localStorage.removeItem(`currentPlayerId_${tabId}`);
+        }
+    }, [currentPlayerId, tabId]);
+
+    // Tự động kết nối lại vào phòng khi refresh (chỉ cho tab này)
+    useEffect(() => {
+        const reconnectToGame = async () => {
+            const savedGame = localStorage.getItem(`currentGame_${tabId}`);
+            const savedPlayerId = localStorage.getItem(`currentPlayerId_${tabId}`);
+            
+            if (savedGame && savedPlayerId && playerName) {
+                const game = JSON.parse(savedGame);
+                try {
+                    await gameService.joinGame(game.roomName, playerName);
+                } catch (error) {
+                    console.error('Reconnect error:', error);
+                    // Nếu không thể kết nối lại, xóa thông tin game của tab này
+                    setCurrentGame(null);
+                    setCurrentPlayerId(null);
+                    localStorage.removeItem(`currentGame_${tabId}`);
+                    localStorage.removeItem(`currentPlayerId_${tabId}`);
+                }
+            }
+        };
+
+        reconnectToGame();
+    }, [tabId, playerName]);
 
     useEffect(() => {
+        let mounted = true;
+
         const setupGameEvents = async () => {
             try {
                 gameService.onError((message: string) => {
@@ -90,66 +148,71 @@ export const Game: React.FC = () => {
 
                 gameService.onGameCreated((game: GameType) => {
                     console.log('Game created event:', game);
-                    if (game && game.status === "Waiting") {
-                        // Nếu là người tạo phòng, vào phòng luôn
+                    if (mounted) {
                         if (game.player1Name === playerName) {
                             setCurrentGame(game);
                             setCurrentPlayerId(game.player1Id);
-                        } else {
-                            // Nếu không phải người tạo, thêm vào danh sách phòng
-                            setAvailableRooms(prev => {
-                                const exists = prev.some(room => room.roomName === game.roomName);
-                                if (!exists) {
-                                    return [...prev, game];
-                                }
-                                return prev;
-                            });
                         }
                     }
                 });
 
                 gameService.onGameJoined((game: GameType) => {
                     console.log('Game joined event:', game);
-                    if (game) {
-                        // Nếu là người chơi trong phòng này
+                    if (mounted && game) {
                         if (game.player1Name === playerName || game.player2Name === playerName) {
                             setCurrentGame(game);
                             setCurrentPlayerId(game.player2Name === playerName ? game.player2Id || null : game.player1Id);
                         }
-                        // Xóa phòng khỏi danh sách phòng chờ
-                        setAvailableRooms(prev => 
-                            prev.filter(room => room.roomName !== game.roomName)
-                        );
+                    }
+                });
+
+                gameService.onGameUpdated((game: GameType) => {
+                    console.log('Game updated event:', game);
+                    if (mounted) {
+                        if (currentGame && game.id === currentGame.id) {
+                            setCurrentGame(game);
+                        }
                     }
                 });
 
                 gameService.onAvailableRooms((rooms: GameType[]) => {
-                    console.log('Available rooms event:', rooms);
-                    if (Array.isArray(rooms)) {
-                        setAvailableRooms(prev => {
-                            const newRooms = rooms.filter(newRoom => 
-                                !prev.some(existingRoom => existingRoom.roomName === newRoom.roomName)
-                            );
-                            return [...prev, ...newRooms].filter(room => room.status === "Waiting");
-                        });
+                    console.log('Available rooms event received:', rooms);
+                    if (mounted && Array.isArray(rooms)) {
+                        const availableRooms = rooms.filter(room => 
+                            room.status === "Waiting" && room.player1Name !== playerName
+                        );
+                        console.log('Filtered available rooms:', availableRooms);
+                        setAvailableRooms(availableRooms);
+                        setIsLoading(false);
                     }
-                    setIsLoading(false);
                 });
 
                 // Lấy danh sách phòng lần đầu
-                await gameService.getAvailableRooms();
+                const initialRooms = await gameService.getAvailableRooms();
+                if (mounted && Array.isArray(initialRooms)) {
+                    const availableRooms = initialRooms.filter(room => 
+                        room.status === "Waiting" && room.player1Name !== playerName
+                    );
+                    console.log('Initial rooms:', availableRooms);
+                    setAvailableRooms(availableRooms);
+                    setIsLoading(false);
+                }
             } catch (error) {
                 console.error('Setup error:', error);
-                setIsLoading(false);
+                if (mounted) {
+                    setIsLoading(false);
+                }
             }
         };
 
+        // Thiết lập sự kiện game
         setupGameEvents();
 
+        // Cleanup function
         return () => {
-            // Cleanup nếu cần
+            mounted = false;
         };
-    }, [playerName]);
+    }, [playerName, currentGame?.id]);
 
     const handleCreateGame = async () => {
         if (!playerName) {

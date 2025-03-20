@@ -89,5 +89,44 @@ namespace caro_online.Hubs
                 await Clients.Caller.SendAsync("error", ex.Message);
             }
         }
+
+        public async Task DeleteRoom(string roomName)
+        {
+            try
+            {
+                await _gameService.DeleteRoom(roomName);
+                await Clients.All.SendAsync("GameCreated", null);
+            }
+            catch (Exception ex)
+            {
+                await Clients.Caller.SendAsync("Error", ex.Message);
+            }
+        }
+
+        public async Task LeaveRoom(string roomName, string playerName)
+        {
+            try
+            {
+                var game = _gameService.LeaveRoom(roomName, playerName);
+                await Clients.All.SendAsync("GameUpdated", game);
+            }
+            catch (Exception ex)
+            {
+                await Clients.Caller.SendAsync("Error", ex.Message);
+            }
+        }
+
+        public async Task MakeMove(string gameId, string playerId, int row, int col)
+        {
+            try
+            {
+                var game = await _gameService.MakeMove(gameId, playerId, row, col);
+                await Clients.All.SendAsync("GameUpdated", game);
+            }
+            catch (Exception ex)
+            {
+                await Clients.Caller.SendAsync("Error", ex.Message);
+            }
+        }
     }
 } 

@@ -10,10 +10,11 @@ export interface Game {
     roomName: string;
     player1Id: string;
     player1Name: string;
-    player2Id?: string;
-    player2Name?: string;
-    status: 'Waiting' | 'InProgress' | 'Finished';
-    board?: string[][];
+    player2Id?: string | null;
+    player2Name?: string | null;
+    status: string;
     currentTurn?: string;
+    board?: number[];
     winner?: string;
+    createdAt: Date;
 } 

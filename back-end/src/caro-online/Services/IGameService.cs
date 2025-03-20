@@ -9,5 +9,8 @@ namespace caro_online.Services
         Task<Game> CreateGame(string playerName, string roomName);
         Task<Game> JoinGame(string roomName, string playerName);
         Task<IEnumerable<Game>> GetAvailableRooms();
+        Task DeleteRoom(string roomName);
+        Task LeaveRoom(string roomName, string playerName);
+        Task<Game> MakeMove(string gameId, string playerId, int row, int col);
     }
 } 

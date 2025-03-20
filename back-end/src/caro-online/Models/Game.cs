@@ -13,6 +13,7 @@ namespace caro_online.Models
         public string? Player2Id { get; set; }
         public string? Player2Name { get; set; }
         public string Status { get; set; } = "Waiting";
+        public string Winner { get; set; } = string.Empty;
         public int[] Board { get; set; } = new int[15 * 15];
         public string CurrentTurn { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

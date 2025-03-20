@@ -140,6 +140,22 @@ class GameService {
         await this.ensureConnection();
         return await this.connection!.invoke('MakeMove', gameId, playerId, row, col);
     }
+
+    public async deleteRoom(roomName: string): Promise<void> {
+        await this.connection!.invoke('DeleteRoom', roomName);
+    }
+
+    public async leaveRoom(roomName: string, playerName: string): Promise<void> {
+        await this.connection!.invoke('LeaveRoom', roomName, playerName);
+    }
+
+    public onGameDeleted(callback: (roomName: string) => void) {
+        this.connection!.on('GameDeleted', callback);
+    }
+
+    public onPlayerLeft(callback: (game: Game) => void) {
+        this.connection!.on('PlayerLeft', callback);
+    }
 }
 
 export const gameService = new GameService(); 

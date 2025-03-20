@@ -6,6 +6,7 @@ const BoardContainer = styled.div`
     max-width: 800px;
     margin: 0 auto;
     padding: 20px;
+    position: relative;
 `;
 
 const GameInfo = styled.div`
@@ -65,6 +66,65 @@ const Cell = styled.div<{ isWinningCell?: boolean }>`
     }
 `;
 
+const WinnerModal = styled.div`
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+`;
+
+const WinnerContent = styled.div`
+    background-color: white;
+    padding: 30px;
+    border-radius: 10px;
+    text-align: center;
+    animation: slideIn 0.5s ease-out;
+
+    @keyframes slideIn {
+        from {
+            transform: translateY(-100px);
+            opacity: 0;
+        }
+        to {
+            transform: translateY(0);
+            opacity: 1;
+        }
+    }
+`;
+
+const WinnerTitle = styled.h2<{ isWinner: boolean }>`
+    color: ${props => props.isWinner ? '#2ecc71' : '#e74c3c'};
+    margin-bottom: 20px;
+    font-size: 28px;
+`;
+
+const WinnerText = styled.p<{ isWinner: boolean }>`
+    font-size: 18px;
+    margin-bottom: 20px;
+    color: ${props => props.isWinner ? '#27ae60' : '#c0392b'};
+`;
+
+const PlayAgainButton = styled.button`
+    padding: 10px 20px;
+    background-color: #3498db;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background-color 0.3s;
+
+    &:hover {
+        background-color: #2980b9;
+    }
+`;
+
 interface BoardProps {
     game: Game;
     currentPlayerId?: string;
@@ -98,6 +158,13 @@ export const Board: React.FC<BoardProps> = ({ game, currentPlayerId, onCellClick
         );
     };
 
+    const getWinnerName = () => {
+        if (!game.winner) return null;
+        return game.winner === game.player1Id ? game.player1Name : game.player2Name;
+    };
+
+    const amIWinner = getWinnerName() === (isPlayer1 ? game.player1Name : game.player2Name);
+
     return (
         <BoardContainer>
             <GameInfo>
@@ -115,6 +182,24 @@ export const Board: React.FC<BoardProps> = ({ game, currentPlayerId, onCellClick
             <Grid>
                 {Array(225).fill(null).map((_, index) => renderCell(index))}
             </Grid>
+
+            {game.status === "Finished" && game.winner && (
+                <WinnerModal>
+                    <WinnerContent>
+                        <WinnerTitle isWinner={amIWinner}>
+                            {amIWinner ? '🎉 Chúc mừng! 🎉' : '😢 Thua cuộc! 😢'}
+                        </WinnerTitle>
+                        <WinnerText isWinner={amIWinner}>
+                            {amIWinner 
+                                ? "Bạn đã chiến thắng một thằng thua cuộc!" 
+                                : `${getWinnerName()} đã chiến thắng rồi thằng thua cuộc!`}
+                        </WinnerText>
+                        <PlayAgainButton onClick={onExitRoom}>
+                            Chơi lại
+                        </PlayAgainButton>
+                    </WinnerContent>
+                </WinnerModal>
+            )}
         </BoardContainer>
     );
 }; 

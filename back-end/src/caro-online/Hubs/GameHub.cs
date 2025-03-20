@@ -128,5 +128,10 @@ namespace caro_online.Hubs
                 await Clients.Caller.SendAsync("Error", ex.Message);
             }
         }
+
+        public IEnumerable<Game> GetFinishedGames()
+        {
+            return _gameService.GetFinishedGames();
+        }
     }
 } 

@@ -383,5 +383,13 @@ namespace caro_online.Services
             }
             Console.WriteLine("----------------------------------------");
         }
+
+        public IEnumerable<Game> GetFinishedGames()
+        {
+            return _games.Values
+                .Where(game => game.Status == GameStatus.Finished.ToString())
+                .OrderByDescending(game => game.CreatedAt)
+                .ToList();
+        }
     }
 } 

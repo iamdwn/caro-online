@@ -20,51 +20,41 @@ class GameService {
 
         this.connection = new HubConnectionBuilder()
             .withUrl('http://localhost:5071/gameHub')
-            .withAutomaticReconnect()
-            .configureLogging(LogLevel.Information)
+            .withAutomaticReconnect([0, 2000, 5000, 10000])
+            .configureLogging(LogLevel.Warning)
             .build();
 
-        this.connection.on('connected', (connectionId: string) => {
-            console.log('Connected to SignalR hub with ID:', connectionId);
-        });
-
         this.connection.on('gameCreated', (game: Game) => {
-            console.log('Game created:', game);
             if (this.gameCreatedCallback) {
                 this.gameCreatedCallback(game);
             }
         });
 
         this.connection.on('gameJoined', (game: Game) => {
-            console.log('Game joined:', game);
             if (this.gameJoinedCallback) {
                 this.gameJoinedCallback(game);
             }
         });
 
         this.connection.on('gameUpdated', (game: Game) => {
-            console.log('Game updated:', game);
             if (this.gameUpdatedCallback) {
                 this.gameUpdatedCallback(game);
             }
         });
 
         this.connection.on('availableRooms', (rooms: Game[]) => {
-            console.log('Available rooms:', rooms);
             if (this.availableRoomsCallback) {
                 this.availableRoomsCallback(rooms);
             }
         });
 
         this.connection.on('error', (message: string) => {
-            console.error('Error from server:', message);
             if (this.errorCallback) {
                 this.errorCallback(message);
             }
         });
 
         this.connection.onclose(() => {
-            console.log('Connection closed');
             this.connectionPromise = null;
         });
 
@@ -73,8 +63,6 @@ class GameService {
         });
 
         this.connection.onreconnected(() => {
-            console.log('Reconnected');
-            // Lấy lại danh sách phòng sau khi kết nối lại
             this.getAvailableRooms();
         });
     }
@@ -95,7 +83,6 @@ class GameService {
         try {
             await this.connectionPromise;
         } catch (error) {
-            console.error('SignalR Connection Error:', error);
             this.connectionPromise = null;
             throw error;
         }
@@ -106,15 +93,33 @@ class GameService {
     }
 
     public onGameCreated(callback: (game: Game) => void) {
-        this.gameCreatedCallback = callback;
+        if (!this.connection) return;
+        this.connection.on('GameCreated', callback);
+    }
+
+    public offGameCreated(callback: (game: Game) => void) {
+        if (!this.connection) return;
+        this.connection.off('GameCreated', callback);
     }
 
     public onGameJoined(callback: (game: Game) => void) {
-        this.gameJoinedCallback = callback;
+        if (!this.connection) return;
+        this.connection.on('GameJoined', callback);
+    }
+
+    public offGameJoined(callback: (game: Game) => void) {
+        if (!this.connection) return;
+        this.connection.off('GameJoined', callback);
     }
 
     public onGameUpdated(callback: (game: Game) => void) {
-        this.gameUpdatedCallback = callback;
+        if (!this.connection) return;
+        this.connection.on('GameUpdated', callback);
+    }
+
+    public offGameUpdated(callback: (game: Game) => void) {
+        if (!this.connection) return;
+        this.connection.off('GameUpdated', callback);
     }
 
     public onAvailableRooms(callback: (rooms: Game[]) => void) {
@@ -122,13 +127,23 @@ class GameService {
     }
 
     public async createGame(playerName: string, roomName: string) {
-        await this.ensureConnection();
-        return await this.connection!.invoke('CreateGame', playerName, roomName);
+        try {
+            await this.ensureConnection();
+            return await this.connection!.invoke('CreateGame', playerName, roomName);
+        } catch (error) {
+            console.error('Create game error:', error);
+            throw error;
+        }
     }
 
     public async joinGame(roomName: string, playerName: string) {
-        await this.ensureConnection();
-        return await this.connection!.invoke('JoinGame', roomName, playerName);
+        try {
+            await this.ensureConnection();
+            return await this.connection!.invoke('JoinGame', roomName, playerName);
+        } catch (error) {
+            console.error('Join game error:', error);
+            throw error;
+        }
     }
 
     public async getAvailableRooms() {
@@ -137,8 +152,13 @@ class GameService {
     }
 
     public async makeMove(gameId: string, playerId: string, row: number, col: number) {
-        await this.ensureConnection();
-        return await this.connection!.invoke('MakeMove', gameId, playerId, row, col);
+        try {
+            await this.ensureConnection();
+            return await this.connection!.invoke('MakeMove', gameId, playerId, row, col);
+        } catch (error) {
+            console.error('Make move error:', error);
+            throw error;
+        }
     }
 
     public async deleteRoom(roomName: string): Promise<void> {
@@ -155,6 +175,29 @@ class GameService {
 
     public onPlayerLeft(callback: (game: Game) => void) {
         this.connection!.on('PlayerLeft', callback);
+    }
+
+    async getFinishedGames(): Promise<Game[]> {
+        try {
+            if (!this.connection) {
+                throw new Error('Connection is not initialized');
+            }
+            const response = await this.connection.invoke('GetFinishedGames');
+            return response;
+        } catch (error) {
+            console.error('Error getting finished games:', error);
+            return [];
+        }
+    }
+
+    onGameFinished(callback: (game: Game) => void) {
+        if (!this.connection) return;
+        this.connection.on('GameFinished', callback);
+    }
+
+    offGameFinished(callback: (game: Game) => void) {
+        if (!this.connection) return;
+        this.connection.off('GameFinished', callback);
     }
 }
 

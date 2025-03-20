@@ -38,23 +38,48 @@ const Button = styled.button`
     }
 `;
 
-const RoomList = styled.div`
+const RoomListContainer = styled.div`
+    display: flex;
+    gap: 20px;
     margin-top: 20px;
-    background-color: #fff;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    padding: 10px;
+`;
+
+const RoomList = styled.div`
+    flex: 1;
+    background: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+`;
+
+const RoomListTitle = styled.h3`
+    margin-bottom: 15px;
+    color: #2c3e50;
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    svg {
+        width: 20px;
+        height: 20px;
+    }
 `;
 
 const RoomItem = styled.div`
+    padding: 12px;
+    border: 1px solid #e1e1e1;
+    border-radius: 4px;
+    margin-bottom: 10px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 10px;
-    border-bottom: 1px solid #eee;
+    background: #f8f9fa;
+    transition: all 0.3s ease;
 
-    &:last-child {
-        border-bottom: none;
+    &:hover {
+        background: #e9ecef;
+        transform: translateY(-2px);
     }
 `;
 
@@ -64,12 +89,38 @@ const RoomInfo = styled.div`
 
 const RoomName = styled.div`
     font-weight: bold;
-    margin-bottom: 5px;
+    color: #2c3e50;
 `;
 
-const RoomCreator = styled.div`
+const PlayerName = styled.div`
     color: #666;
-    font-size: 0.9em;
+    font-size: 14px;
+    margin-top: 4px;
+`;
+
+const JoinButton = styled.button`
+    padding: 6px 12px;
+    background-color: #3498db;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+
+    &:hover {
+        background-color: #2980b9;
+    }
+`;
+
+const FinishedGameInfo = styled.div`
+    color: #666;
+    font-size: 14px;
+    margin-top: 4px;
+    
+    span.winner {
+        color: #27ae60;
+        font-weight: bold;
+    }
 `;
 
 export const Game: React.FC = () => {
@@ -78,6 +129,7 @@ export const Game: React.FC = () => {
     const [playerName, setPlayerName] = useState(() => localStorage.getItem('playerName') || '');
     const [roomName, setRoomName] = useState('');
     const [availableRooms, setAvailableRooms] = useState<GameType[]>([]);
+    const [finishedGames, setFinishedGames] = useState<GameType[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [currentGame, setCurrentGame] = useState<GameType | null>(() => {
         const savedGame = localStorage.getItem(`currentGame_${tabId}`);
@@ -86,6 +138,9 @@ export const Game: React.FC = () => {
     const [currentPlayerId, setCurrentPlayerId] = useState<string | null>(() => 
         localStorage.getItem(`currentPlayerId_${tabId}`)
     );
+    const [isCreating, setIsCreating] = useState(false);
+    const [isJoining, setIsJoining] = useState(false);
+    const [isMakingMove, setIsMakingMove] = useState(false);
 
     // Lưu playerName khi thay đổi (dùng chung cho tất cả các tab)
     useEffect(() => {
@@ -286,13 +341,100 @@ export const Game: React.FC = () => {
         };
     }, [playerName, currentGame?.id, tabId]);
 
+    useEffect(() => {
+        if (!gameService) return;
+
+        const handleGameCreated = (game: GameType) => {
+            if (game.player1Name === playerName) {
+                setCurrentGame(game);
+                setCurrentPlayerId(game.player1Id);
+                localStorage.setItem(`currentGame_${tabId}`, JSON.stringify(game));
+                localStorage.setItem(`currentPlayerId_${tabId}`, game.player1Id);
+            }
+            setIsCreating(false);
+        };
+
+        const handleGameJoined = (game: GameType) => {
+            if (game.player1Name === playerName || game.player2Name === playerName) {
+                setCurrentGame(game);
+                const playerId = game.player2Name === playerName ? game.player2Id : game.player1Id;
+                setCurrentPlayerId(playerId || null);
+                localStorage.setItem(`currentGame_${tabId}`, JSON.stringify(game));
+                if (playerId) {
+                    localStorage.setItem(`currentPlayerId_${tabId}`, playerId);
+                }
+            }
+            setIsJoining(false);
+        };
+
+        const handleGameUpdated = (game: GameType) => {
+            if (currentGame && game.id === currentGame.id) {
+                setCurrentGame(game);
+                localStorage.setItem(`currentGame_${tabId}`, JSON.stringify(game));
+            }
+        };
+
+        const handleGameFinished = (game: GameType) => {
+            setFinishedGames(prev => {
+                const exists = prev.some(g => g.id === game.id);
+                if (exists) return prev;
+                return [game, ...prev];
+            });
+        };
+
+        gameService.onGameCreated(handleGameCreated);
+        gameService.onGameJoined(handleGameJoined);
+        gameService.onGameUpdated(handleGameUpdated);
+        gameService.onGameFinished(handleGameFinished);
+
+        return () => {
+            gameService.offGameCreated(handleGameCreated);
+            gameService.offGameJoined(handleGameJoined);
+            gameService.offGameUpdated(handleGameUpdated);
+            gameService.offGameFinished(handleGameFinished);
+        };
+    }, [gameService, playerName, currentGame?.id, tabId]);
+
+    useEffect(() => {
+        let mounted = true;
+        let intervalId: NodeJS.Timeout;
+
+        const fetchRooms = async () => {
+            try {
+                const [availableRoomsData, finishedGamesData] = await Promise.all([
+                    gameService.getAvailableRooms(),
+                    gameService.getFinishedGames()
+                ]);
+                if (mounted) {
+                    setAvailableRooms(availableRoomsData || []);
+                    setFinishedGames(finishedGamesData || []);
+                }
+            } catch (error) {
+                console.error('Error fetching rooms:', error);
+                if (mounted) {
+                    setAvailableRooms([]);
+                    setFinishedGames([]);
+                }
+            }
+        };
+
+        // Lấy danh sách phòng ngay khi component mount
+        fetchRooms();
+
+        // Cập nhật mỗi 3 giây thay vì 2 giây
+        intervalId = setInterval(fetchRooms, 3000);
+
+        return () => {
+            mounted = false;
+            if (intervalId) {
+                clearInterval(intervalId);
+            }
+        };
+    }, []);
+
     const handleCreateGame = async () => {
-        if (!playerName) {
-            alert('Vui lòng nhập tên người chơi');
-            return;
-        }
-        if (!roomName) {
-            alert('Vui lòng nhập tên phòng');
+        if (!playerName || !roomName) {
+            alert('Vui lòng nhập đầy đủ thông tin');
             return;
         }
 
@@ -302,14 +444,13 @@ export const Game: React.FC = () => {
         }
 
         try {
-            setIsLoading(true);
+            setIsCreating(true);
             await gameService.createGame(playerName, roomName);
             setRoomName('');
         } catch (error) {
             console.error('Create game error:', error);
             alert('Không thể tạo game');
-        } finally {
-            setIsLoading(false);
+            setIsCreating(false);
         }
     };
 
@@ -319,23 +460,26 @@ export const Game: React.FC = () => {
             return;
         }
         try {
-            setIsLoading(true);
+            setIsJoining(true);
             await gameService.joinGame(roomName, playerName);
         } catch (error) {
             console.error('Join game error:', error);
             alert('Không thể tham gia game');
-        } finally {
-            setIsLoading(false);
+            setIsJoining(false);
         }
     };
 
     const handleCellClick = async (row: number, col: number) => {
-        if (!currentGame || !currentPlayerId) return;
+        if (!currentGame || !currentPlayerId || isMakingMove) return;
+        
         try {
+            setIsMakingMove(true);
             await gameService.makeMove(currentGame.id, currentPlayerId, row, col);
         } catch (error) {
             console.error('Make move error:', error);
             alert('Không thể đánh vào ô này');
+        } finally {
+            setIsMakingMove(false);
         }
     };
 
@@ -385,6 +529,7 @@ export const Game: React.FC = () => {
                         placeholder="Tên người chơi"
                         value={playerName}
                         onChange={(e) => setPlayerName(e.target.value)}
+                        disabled={isCreating || isJoining}
                     />
                 </div>
                 <div style={{ marginTop: '10px' }}>
@@ -393,38 +538,75 @@ export const Game: React.FC = () => {
                         placeholder="Tên phòng"
                         value={roomName}
                         onChange={(e) => setRoomName(e.target.value)}
+                        disabled={isCreating || isJoining}
                     />
                 </div>
                 <div style={{ marginTop: '10px', display: 'flex', gap: '10px' }}>
-                    <Button onClick={handleCreateGame} disabled={isLoading}>
-                        {isLoading ? 'Đang xử lý...' : 'Tạo phòng mới'}
+                    <Button 
+                        onClick={handleCreateGame} 
+                        disabled={isCreating || isJoining}
+                    >
+                        {isCreating ? 'Đang tạo phòng...' : 'Tạo phòng mới'}
                     </Button>
                 </div>
             </JoinGameForm>
 
-            <RoomList>
-                <h3>Danh sách phòng đang chờ ({availableRooms.length})</h3>
-                {isLoading ? (
-                    <div>Đang tải danh sách phòng...</div>
-                ) : availableRooms.length === 0 ? (
-                    <div>Không có phòng nào đang chờ</div>
-                ) : (
-                    availableRooms.map((room) => (
-                        <RoomItem key={room.id}>
-                            <RoomInfo>
-                                <RoomName>Tên phòng: {room.roomName}</RoomName>
-                                <RoomCreator>Người tạo: {room.player1Name}</RoomCreator>
-                            </RoomInfo>
-                            <Button 
-                                onClick={() => handleJoinGame(room.roomName)}
-                                disabled={isLoading}
-                            >
-                                {isLoading ? 'Đang xử lý...' : 'Tham gia'}
-                            </Button>
-                        </RoomItem>
-                    ))
-                )}
-            </RoomList>
+            <RoomListContainer>
+                <RoomList>
+                    <RoomListTitle>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M15 12H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        Danh sách phòng đang chờ ({availableRooms.length})
+                    </RoomListTitle>
+                    {availableRooms.length === 0 ? (
+                        <div>Không có phòng nào đang chờ</div>
+                    ) : (
+                        availableRooms.map(room => (
+                            <RoomItem key={room.id}>
+                                <RoomInfo>
+                                    <RoomName>Tên phòng: {room.roomName}</RoomName>
+                                    <PlayerName>Người tạo: {room.player1Name}</PlayerName>
+                                </RoomInfo>
+                                <JoinButton 
+                                    onClick={() => handleJoinGame(room.roomName)}
+                                    disabled={isJoining}
+                                >
+                                    {isJoining ? 'Đang tham gia...' : 'Tham gia'}
+                                </JoinButton>
+                            </RoomItem>
+                        ))
+                    )}
+                </RoomList>
+
+                <RoomList>
+                    <RoomListTitle>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        Trận đấu đã kết thúc ({finishedGames.length})
+                    </RoomListTitle>
+                    {finishedGames.length === 0 ? (
+                        <div>Chưa có trận đấu nào kết thúc</div>
+                    ) : (
+                        finishedGames.map(game => (
+                            <RoomItem key={game.id}>
+                                <RoomInfo>
+                                    <RoomName>Tên phòng: {game.roomName}</RoomName>
+                                    <FinishedGameInfo>
+                                        {game.player1Name} vs {game.player2Name}
+                                    </FinishedGameInfo>
+                                    <FinishedGameInfo>
+                                        Người thắng: <span className="winner">
+                                            {game.winner === game.player1Id ? game.player1Name : game.player2Name}
+                                        </span>
+                                    </FinishedGameInfo>
+                                </RoomInfo>
+                            </RoomItem>
+                        ))
+                    )}
+                </RoomList>
+            </RoomListContainer>
         </GameContainer>
     );
 }; 

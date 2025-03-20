@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import styled from 'styled-components';
 import { Game as GameType } from '../types/game';
 import { gameService } from '../services/gameService';
+import { Board } from './Board';
 
 const GameContainer = styled.div`
     max-width: 800px;
@@ -76,55 +77,63 @@ export const Game: React.FC = () => {
     const [roomName, setRoomName] = useState('');
     const [availableRooms, setAvailableRooms] = useState<GameType[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [currentGame, setCurrentGame] = useState<GameType | null>(null);
+    const [currentPlayerId, setCurrentPlayerId] = useState<string | null>(null);
 
     useEffect(() => {
         const setupGameEvents = async () => {
             try {
-                // Lắng nghe sự kiện khi có phòng mới được tạo
-                gameService.onGameCreated((game) => {
+                gameService.onError((message: string) => {
+                    console.error('Error:', message);
+                    alert(message);
+                });
+
+                gameService.onGameCreated((game: GameType) => {
                     console.log('Game created event:', game);
                     if (game && game.status === "Waiting") {
-                        setAvailableRooms(prev => {
-                            // Kiểm tra xem phòng đã tồn tại chưa
-                            const exists = prev.some(room => room.roomName === game.roomName);
-                            if (!exists) {
-                                console.log('Adding new room:', game);
-                                return [...prev, game];
-                            }
-                            return prev;
-                        });
+                        // Nếu là người tạo phòng, vào phòng luôn
+                        if (game.player1Name === playerName) {
+                            setCurrentGame(game);
+                            setCurrentPlayerId(game.player1Id);
+                        } else {
+                            // Nếu không phải người tạo, thêm vào danh sách phòng
+                            setAvailableRooms(prev => {
+                                const exists = prev.some(room => room.roomName === game.roomName);
+                                if (!exists) {
+                                    return [...prev, game];
+                                }
+                                return prev;
+                            });
+                        }
                     }
                 });
 
-                // Lắng nghe sự kiện khi có người tham gia phòng
-                gameService.onGameJoined((game) => {
+                gameService.onGameJoined((game: GameType) => {
                     console.log('Game joined event:', game);
                     if (game) {
+                        // Nếu là người chơi trong phòng này
+                        if (game.player1Name === playerName || game.player2Name === playerName) {
+                            setCurrentGame(game);
+                            setCurrentPlayerId(game.player2Name === playerName ? game.player2Id || null : game.player1Id);
+                        }
+                        // Xóa phòng khỏi danh sách phòng chờ
                         setAvailableRooms(prev => 
                             prev.filter(room => room.roomName !== game.roomName)
                         );
                     }
                 });
 
-                // Lắng nghe sự kiện cập nhật danh sách phòng
-                gameService.onAvailableRooms((rooms) => {
+                gameService.onAvailableRooms((rooms: GameType[]) => {
                     console.log('Available rooms event:', rooms);
                     if (Array.isArray(rooms)) {
                         setAvailableRooms(prev => {
-                            // Lọc ra các phòng không trùng lặp
                             const newRooms = rooms.filter(newRoom => 
                                 !prev.some(existingRoom => existingRoom.roomName === newRoom.roomName)
                             );
-                            // Kết hợp danh sách cũ và mới
                             return [...prev, ...newRooms].filter(room => room.status === "Waiting");
                         });
                     }
                     setIsLoading(false);
-                });
-
-                gameService.onError((message) => {
-                    console.error('Error:', message);
-                    alert(message);
                 });
 
                 // Lấy danh sách phòng lần đầu
@@ -140,7 +149,7 @@ export const Game: React.FC = () => {
         return () => {
             // Cleanup nếu cần
         };
-    }, []);
+    }, [playerName]);
 
     const handleCreateGame = async () => {
         if (!playerName) {
@@ -152,7 +161,6 @@ export const Game: React.FC = () => {
             return;
         }
 
-        // Kiểm tra xem tên phòng đã tồn tại chưa
         if (availableRooms.some(room => room.roomName === roomName)) {
             alert('Tên phòng đã tồn tại');
             return;
@@ -161,7 +169,7 @@ export const Game: React.FC = () => {
         try {
             setIsLoading(true);
             await gameService.createGame(playerName, roomName);
-            setRoomName(''); // Clear room name after creating
+            setRoomName('');
         } catch (error) {
             console.error('Create game error:', error);
             alert('Không thể tạo game');
@@ -186,6 +194,28 @@ export const Game: React.FC = () => {
         }
     };
 
+    const handleCellClick = async (row: number, col: number) => {
+        if (!currentGame || !currentPlayerId) return;
+        try {
+            await gameService.makeMove(currentGame.id, currentPlayerId, row, col);
+        } catch (error) {
+            console.error('Make move error:', error);
+            alert('Không thể đánh vào ô này');
+        }
+    };
+
+    // Nếu đang trong game, hiển thị bàn cờ
+    if (currentGame) {
+        return (
+            <Board 
+                game={currentGame}
+                currentPlayerId={currentPlayerId || undefined}
+                onCellClick={handleCellClick}
+            />
+        );
+    }
+
+    // Nếu không, hiển thị giao diện tạo/tham gia phòng
     return (
         <GameContainer>
             <JoinGameForm>

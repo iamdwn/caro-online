@@ -7,10 +7,6 @@
       "RelativeMoniker": "D:0:0:{FF4A2DC2-09C8-44FB-A971-526F05BAB087}|caro-online\\caro-online.csproj|solutionrelative:caro-online\\services\\gameservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{FF4A2DC2-09C8-44FB-A971-526F05BAB087}|caro-online\\caro-online.csproj|d:\\docm\\.project\\.personal\\games\\caro-online\\back-end\\src\\caro-online\\hubs\\gamehub.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{FF4A2DC2-09C8-44FB-A971-526F05BAB087}|caro-online\\caro-online.csproj|solutionrelative:caro-online\\hubs\\gamehub.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
       "AbsoluteMoniker": "D:0:0:{FF4A2DC2-09C8-44FB-A971-526F05BAB087}|caro-online\\caro-online.csproj|d:\\docm\\.project\\.personal\\games\\caro-online\\back-end\\src\\caro-online\\services\\igameservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{FF4A2DC2-09C8-44FB-A971-526F05BAB087}|caro-online\\caro-online.csproj|solutionrelative:caro-online\\services\\igameservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
@@ -19,8 +15,8 @@
       "RelativeMoniker": "D:0:0:{FF4A2DC2-09C8-44FB-A971-526F05BAB087}|caro-online\\caro-online.csproj|solutionrelative:caro-online\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|D:\\Docm\\.project\\.personal\\games\\caro-online\\back-end\\src\\caro-online\\obj\\Debug\\net8.0\\caro-online.AssemblyInfo.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:caro-online\\obj\\Debug\\net8.0\\caro-online.AssemblyInfo.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{FF4A2DC2-09C8-44FB-A971-526F05BAB087}|caro-online\\caro-online.csproj|d:\\docm\\.project\\.personal\\games\\caro-online\\back-end\\src\\caro-online\\hubs\\gamehub.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{FF4A2DC2-09C8-44FB-A971-526F05BAB087}|caro-online\\caro-online.csproj|solutionrelative:caro-online\\hubs\\gamehub.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     }
   ],
   "DocumentGroupContainers": [
@@ -44,50 +40,40 @@
               "RelativeDocumentMoniker": "caro-online\\Services\\GameService.cs",
               "ToolTip": "D:\\Docm\\.project\\.personal\\games\\caro-online\\back-end\\src\\caro-online\\Services\\GameService.cs",
               "RelativeToolTip": "caro-online\\Services\\GameService.cs",
-              "ViewState": "AgIAAAwAAAAAAAAAAAAAAGcAAAAAAAAAAAAAAA==",
+              "ViewState": "AgIAAB4AAAAAAAAAAAAAAAgAAAABAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2025-03-20T05:55:27.676Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 2,
+              "DocumentIndex": 1,
               "Title": "IGameService.cs",
               "DocumentMoniker": "D:\\Docm\\.project\\.personal\\games\\caro-online\\back-end\\src\\caro-online\\Services\\IGameService.cs",
               "RelativeDocumentMoniker": "caro-online\\Services\\IGameService.cs",
               "ToolTip": "D:\\Docm\\.project\\.personal\\games\\caro-online\\back-end\\src\\caro-online\\Services\\IGameService.cs",
               "RelativeToolTip": "caro-online\\Services\\IGameService.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAABMAAAAHAAAAAAAAAA==",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAwAAAACAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-03-19T18:22:45.23Z"
+              "WhenOpened": "2025-03-19T18:22:45.23Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 4,
-              "Title": "caro-online.AssemblyInfo.cs",
-              "DocumentMoniker": "D:\\Docm\\.project\\.personal\\games\\caro-online\\back-end\\src\\caro-online\\obj\\Debug\\net8.0\\caro-online.AssemblyInfo.cs",
-              "RelativeDocumentMoniker": "caro-online\\obj\\Debug\\net8.0\\caro-online.AssemblyInfo.cs",
-              "ToolTip": "D:\\Docm\\.project\\.personal\\games\\caro-online\\back-end\\src\\caro-online\\obj\\Debug\\net8.0\\caro-online.AssemblyInfo.cs",
-              "RelativeToolTip": "caro-online\\obj\\Debug\\net8.0\\caro-online.AssemblyInfo.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-03-19T17:53:01.223Z"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 3,
+              "DocumentIndex": 2,
               "Title": "Program.cs",
               "DocumentMoniker": "D:\\Docm\\.project\\.personal\\games\\caro-online\\back-end\\src\\caro-online\\Program.cs",
               "RelativeDocumentMoniker": "caro-online\\Program.cs",
               "ToolTip": "D:\\Docm\\.project\\.personal\\games\\caro-online\\back-end\\src\\caro-online\\Program.cs",
               "RelativeToolTip": "caro-online\\Program.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAABkAAAAHAAAAAAAAAA==",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABoAAAAHAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-03-19T17:52:38.44Z"
+              "WhenOpened": "2025-03-19T17:52:38.44Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 1,
+              "DocumentIndex": 3,
               "Title": "GameHub.cs",
               "DocumentMoniker": "D:\\Docm\\.project\\.personal\\games\\caro-online\\back-end\\src\\caro-online\\Hubs\\GameHub.cs",
               "RelativeDocumentMoniker": "caro-online\\Hubs\\GameHub.cs",

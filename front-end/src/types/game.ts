@@ -12,5 +12,8 @@ export interface Game {
     player1Name: string;
     player2Id?: string;
     player2Name?: string;
-    status: 'Waiting' | 'InProgress' | 'Finished' | 'Cancelled';
+    status: 'Waiting' | 'InProgress' | 'Finished';
+    board?: string[][];
+    currentTurn?: string;
+    winner?: string;
 } 

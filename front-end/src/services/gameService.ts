@@ -98,6 +98,13 @@ class GameService {
             await this.connection.invoke('GetAvailableRooms');
         }
     }
+
+    public async makeMove(gameId: string, playerId: string, row: number, col: number): Promise<void> {
+        await this.ensureConnection();
+        if (this.connection) {
+            await this.connection.invoke('MakeMove', gameId, playerId, row, col);
+        }
+    }
 }
 
 export const gameService = new GameService(); 

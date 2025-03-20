@@ -12,6 +12,7 @@ namespace caro_online.Services
     public class GameService : IGameService
     {
         private static readonly ConcurrentDictionary<string, Game> _games = new();
+        private static readonly ConcurrentDictionary<string, Game> _finishedGames = new();
         private static readonly object _lock = new object();
         private readonly IHubContext<GameHub> _hubContext;
 
@@ -157,56 +158,40 @@ namespace caro_online.Services
 
         public async Task DeleteRoom(string roomName)
         {
-            Game removedGame;
-            lock (_lock)
+            if (_games.TryRemove(roomName, out var game))
             {
-                if (!_games.TryGetValue(roomName, out var game))
-                {
-                    throw new Exception("Không tìm thấy phòng");
-                }
-
-                if (!_games.TryRemove(roomName, out removedGame))
-                {
-                    throw new Exception("Không thể xóa phòng");
-                }
-
-                LogGameInfo("DeleteRoom", removedGame);
+                DeleteGame(game.Id);
+                await _hubContext.Clients.All.SendAsync("GameDeleted", roomName);
             }
-
-            await BroadcastAvailableRooms();
-            // Thông báo cho tất cả người chơi biết phòng đã bị xóa
-            await _hubContext.Clients.All.SendAsync("GameDeleted", roomName);
         }
 
         public async Task LeaveRoom(string roomName, string playerName)
         {
-            Game game;
-            lock (_lock)
+            if (_games.TryGetValue(roomName, out var game))
             {
-                if (!_games.TryGetValue(roomName, out game))
+                if (game.Player1Name == playerName)
                 {
-                    throw new Exception("Không tìm thấy phòng");
+                    game.Player1Name = null;
+                    game.Player1Id = null;
+                }
+                else if (game.Player2Name == playerName)
+                {
+                    game.Player2Name = null;
+                    game.Player2Id = null;
                 }
 
-                // Chỉ cho phép người chơi 2 rời phòng
-                if (game.Player2Name != playerName)
+                if (game.Player1Name == null && game.Player2Name == null)
                 {
-                    throw new Exception("Bạn không thể rời phòng này");
+                    DeleteGame(game.Id);
+                    _games.TryRemove(roomName, out _);
+                    await _hubContext.Clients.All.SendAsync("GameDeleted", roomName);
                 }
-
-                // Reset thông tin người chơi 2
-                game.Player2Id = null;
-                game.Player2Name = null;
-                game.Status = "Waiting";
-                game.CurrentTurn = game.Player1Id;
-
-                _games.TryUpdate(roomName, game, game);
-                LogGameInfo("LeaveRoom", game);
+                else
+                {
+                    _games.TryUpdate(roomName, game, game);
+                    await _hubContext.Clients.All.SendAsync("PlayerLeft", game);
+                }
             }
-
-            await BroadcastAvailableRooms();
-            // Thông báo cho tất cả người chơi biết có người rời phòng
-            await _hubContext.Clients.All.SendAsync("PlayerLeft", game);
         }
 
         public async Task<Game> MakeMove(string gameId, string playerId, int row, int col)
@@ -248,11 +233,7 @@ namespace caro_online.Services
                 game.CurrentTurn = playerId == game.Player1Id ? game.Player2Id : game.Player1Id;
 
                 // Kiểm tra thắng thua
-                if (CheckWin(game.Board, row, col))
-                {
-                    game.Status = "Finished";
-                    game.Winner = playerId;
-                }
+                CheckWinner(game, row, col);
 
                 _games.TryUpdate(game.RoomName, game, game);
                 LogGameInfo("MakeMove", game);
@@ -262,93 +243,53 @@ namespace caro_online.Services
             return game;
         }
 
-        private bool CheckWin(int[] board, int row, int col)
+        private void CheckWinner(Game game, int row, int col)
         {
-            int index = row * 15 + col;
-            int value = board[index];
-            int count;
+            var directions = new[]
+            {
+                (1, 0),   // Ngang
+                (0, 1),   // Dọc
+                (1, 1),   // Chéo xuống
+                (1, -1)   // Chéo lên
+            };
 
-            // Kiểm tra hàng ngang
-            count = 1;
-            // Kiểm tra sang trái
-            for (int i = 1; i <= 4; i++)
-            {
-                if (col - i >= 0 && board[row * 15 + (col - i)] == value)
-                    count++;
-                else
-                    break;
-            }
-            // Kiểm tra sang phải
-            for (int i = 1; i <= 4; i++)
-            {
-                if (col + i < 15 && board[row * 15 + (col + i)] == value)
-                    count++;
-                else
-                    break;
-            }
-            if (count >= 5) return true;
+            // Lấy người chơi vừa đánh (người đánh cuối cùng)
+            var lastPlayerId = game.CurrentTurn == game.Player1Id ? game.Player2Id : game.Player1Id;
+            var currentPlayer = lastPlayerId == game.Player1Id ? 1 : 2;
 
-            // Kiểm tra hàng dọc
-            count = 1;
-            // Kiểm tra lên trên
-            for (int i = 1; i <= 4; i++)
+            foreach (var (dx, dy) in directions)
             {
-                if (row - i >= 0 && board[(row - i) * 15 + col] == value)
-                    count++;
-                else
-                    break;
-            }
-            // Kiểm tra xuống dưới
-            for (int i = 1; i <= 4; i++)
-            {
-                if (row + i < 15 && board[(row + i) * 15 + col] == value)
-                    count++;
-                else
-                    break;
-            }
-            if (count >= 5) return true;
+                var count = 1;
 
-            // Kiểm tra đường chéo chính
-            count = 1;
-            // Kiểm tra lên trên bên trái
-            for (int i = 1; i <= 4; i++)
-            {
-                if (row - i >= 0 && col - i >= 0 && board[(row - i) * 15 + (col - i)] == value)
+                // Kiểm tra theo hướng thuận
+                for (var i = 1; i < 5; i++)
+                {
+                    var newRow = row + dx * i;
+                    var newCol = col + dy * i;
+                    if (newRow < 0 || newRow >= 15 || newCol < 0 || newCol >= 15) break;
+                    if (game.Board[newRow * 15 + newCol] != currentPlayer) break;
                     count++;
-                else
-                    break;
-            }
-            // Kiểm tra xuống dưới bên phải
-            for (int i = 1; i <= 4; i++)
-            {
-                if (row + i < 15 && col + i < 15 && board[(row + i) * 15 + (col + i)] == value)
-                    count++;
-                else
-                    break;
-            }
-            if (count >= 5) return true;
+                }
 
-            // Kiểm tra đường chéo phụ
-            count = 1;
-            // Kiểm tra lên trên bên phải
-            for (int i = 1; i <= 4; i++)
-            {
-                if (row - i >= 0 && col + i < 15 && board[(row - i) * 15 + (col + i)] == value)
+                // Kiểm tra theo hướng ngược
+                for (var i = 1; i < 5; i++)
+                {
+                    var newRow = row - dx * i;
+                    var newCol = col - dy * i;
+                    if (newRow < 0 || newRow >= 15 || newCol < 0 || newCol >= 15) break;
+                    if (game.Board[newRow * 15 + newCol] != currentPlayer) break;
                     count++;
-                else
-                    break;
-            }
-            // Kiểm tra xuống dưới bên trái
-            for (int i = 1; i <= 4; i++)
-            {
-                if (row + i < 15 && col - i >= 0 && board[(row + i) * 15 + (col - i)] == value)
-                    count++;
-                else
-                    break;
-            }
-            if (count >= 5) return true;
+                }
 
-            return false;
+                if (count >= 5)
+                {
+                    game.Winner = lastPlayerId; // Người thắng là người vừa đánh
+                    game.Status = GameStatus.Finished.ToString();
+                    AddFinishedGame(game);
+                    _hubContext.Clients.All.SendAsync("GameFinished", game);
+                    return;
+                }
+            }
         }
 
         private void LogGameInfo(string action, Game game)
@@ -386,10 +327,32 @@ namespace caro_online.Services
 
         public IEnumerable<Game> GetFinishedGames()
         {
-            return _games.Values
-                .Where(game => game.Status == GameStatus.Finished.ToString())
+            return _finishedGames.Values
                 .OrderByDescending(game => game.CreatedAt)
                 .ToList();
+        }
+
+        public void AddFinishedGame(Game game)
+        {
+            _finishedGames.TryAdd(game.Id, game);
+            // Giới hạn số lượng game kết thúc được lưu (ví dụ: 50 game)
+            if (_finishedGames.Count > 50)
+            {
+                var oldestGame = _finishedGames.Values
+                    .OrderBy(g => g.CreatedAt)
+                    .FirstOrDefault();
+
+                if (oldestGame != null)
+                {
+                    _finishedGames.TryRemove(oldestGame.Id, out _);
+                }
+            }
+        }
+
+        public void DeleteGame(string gameId)
+        {
+            _games.TryRemove(gameId, out _);
+            //_finishedGames.TryRemove(gameId, out _);
         }
     }
 } 

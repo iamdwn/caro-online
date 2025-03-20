@@ -219,7 +219,6 @@ export const Game: React.FC = () => {
 
     useEffect(() => {
         let mounted = true;
-        let intervalId: NodeJS.Timeout;
 
         const setupGameEvents = async () => {
             try {
@@ -229,7 +228,6 @@ export const Game: React.FC = () => {
                 });
 
                 gameService.onGameCreated((game: GameType) => {
-                    console.log('Game created event:', game);
                     if (mounted) {
                         if (game.player1Name === playerName) {
                             setCurrentGame(game);
@@ -237,21 +235,11 @@ export const Game: React.FC = () => {
                             localStorage.setItem(`currentGame_${tabId}`, JSON.stringify(game));
                             localStorage.setItem(`currentPlayerId_${tabId}`, game.player1Id);
                         }
-                        // Luôn cập nhật danh sách phòng khi có phòng mới được tạo
-                        gameService.getAvailableRooms().then(rooms => {
-                            if (mounted && Array.isArray(rooms)) {
-                                const availableRooms = rooms.filter(room => 
-                                    room.status === "Waiting" && room.player1Name !== playerName
-                                );
-                                console.log('Updated rooms after creation:', availableRooms);
-                                setAvailableRooms(availableRooms);
-                            }
-                        });
+                        setIsCreating(false);
                     }
                 });
 
                 gameService.onGameJoined((game: GameType) => {
-                    console.log('Game joined event:', game);
                     if (mounted && game) {
                         if (game.player1Name === playerName || game.player2Name === playerName) {
                             setCurrentGame(game);
@@ -262,48 +250,52 @@ export const Game: React.FC = () => {
                                 localStorage.setItem(`currentPlayerId_${tabId}`, playerId);
                             }
                         }
-                        // Luôn cập nhật danh sách phòng khi có người tham gia
-                        gameService.getAvailableRooms().then(rooms => {
-                            if (mounted && Array.isArray(rooms)) {
-                                const availableRooms = rooms.filter(room => 
-                                    room.status === "Waiting" && room.player1Name !== playerName
-                                );
-                                console.log('Updated rooms after join:', availableRooms);
-                                setAvailableRooms(availableRooms);
-                            }
-                        });
+                        setIsJoining(false);
                     }
                 });
 
                 gameService.onGameUpdated((game: GameType) => {
-                    console.log('Game updated event:', game);
-                    if (mounted) {
-                        if (currentGame && game.id === currentGame.id) {
-                            setCurrentGame(game);
-                            localStorage.setItem(`currentGame_${tabId}`, JSON.stringify(game));
-                        }
+                    if (mounted && currentGame && game.id === currentGame.id) {
+                        setCurrentGame(game);
+                        localStorage.setItem(`currentGame_${tabId}`, JSON.stringify(game));
                     }
                 });
 
                 gameService.onAvailableRooms((rooms: GameType[]) => {
-                    console.log('Available rooms event received:', rooms);
                     if (mounted && Array.isArray(rooms)) {
                         const availableRooms = rooms.filter(room => 
                             room.status === "Waiting" && room.player1Name !== playerName
                         );
-                        console.log('Filtered available rooms:', availableRooms);
                         setAvailableRooms(availableRooms);
                     }
                 });
 
-                // Lấy danh sách phòng lần đầu
-                const initialRooms = await gameService.getAvailableRooms();
-                if (mounted && Array.isArray(initialRooms)) {
-                    const availableRooms = initialRooms.filter(room => 
-                        room.status === "Waiting" && room.player1Name !== playerName
-                    );
-                    console.log('Initial rooms:', availableRooms);
-                    setAvailableRooms(availableRooms);
+                gameService.onGameFinished((game: GameType) => {
+                    if (mounted) {
+                        setFinishedGames(prev => {
+                            const exists = prev.some(g => g.id === game.id);
+                            if (exists) return prev;
+                            return [game, ...prev];
+                        });
+                    }
+                });
+
+                // Lấy danh sách phòng và game kết thúc lần đầu
+                const [initialRooms, finishedGames] = await Promise.all([
+                    gameService.getAvailableRooms(),
+                    gameService.getFinishedGames()
+                ]);
+
+                if (mounted) {
+                    if (Array.isArray(initialRooms)) {
+                        const availableRooms = initialRooms.filter(room => 
+                            room.status === "Waiting" && room.player1Name !== playerName
+                        );
+                        setAvailableRooms(availableRooms);
+                    }
+                    if (Array.isArray(finishedGames)) {
+                        setFinishedGames(finishedGames);
+                    }
                 }
             } catch (error) {
                 console.error('Setup error:', error);
@@ -316,121 +308,10 @@ export const Game: React.FC = () => {
 
         setupGameEvents();
 
-        // Cập nhật danh sách phòng mỗi 3 giây
-        intervalId = setInterval(() => {
-            if (mounted) {
-                gameService.getAvailableRooms().then(rooms => {
-                    if (mounted && Array.isArray(rooms)) {
-                        const availableRooms = rooms.filter(room => 
-                            room.status === "Waiting" && room.player1Name !== playerName
-                        );
-                        console.log('Interval update rooms:', availableRooms);
-                        setAvailableRooms(availableRooms);
-                    }
-                }).catch(error => {
-                    console.error('Interval fetch rooms error:', error);
-                });
-            }
-        }, 3000);
-
         return () => {
             mounted = false;
-            if (intervalId) {
-                clearInterval(intervalId);
-            }
         };
     }, [playerName, currentGame?.id, tabId]);
-
-    useEffect(() => {
-        if (!gameService) return;
-
-        const handleGameCreated = (game: GameType) => {
-            if (game.player1Name === playerName) {
-                setCurrentGame(game);
-                setCurrentPlayerId(game.player1Id);
-                localStorage.setItem(`currentGame_${tabId}`, JSON.stringify(game));
-                localStorage.setItem(`currentPlayerId_${tabId}`, game.player1Id);
-            }
-            setIsCreating(false);
-        };
-
-        const handleGameJoined = (game: GameType) => {
-            if (game.player1Name === playerName || game.player2Name === playerName) {
-                setCurrentGame(game);
-                const playerId = game.player2Name === playerName ? game.player2Id : game.player1Id;
-                setCurrentPlayerId(playerId || null);
-                localStorage.setItem(`currentGame_${tabId}`, JSON.stringify(game));
-                if (playerId) {
-                    localStorage.setItem(`currentPlayerId_${tabId}`, playerId);
-                }
-            }
-            setIsJoining(false);
-        };
-
-        const handleGameUpdated = (game: GameType) => {
-            if (currentGame && game.id === currentGame.id) {
-                setCurrentGame(game);
-                localStorage.setItem(`currentGame_${tabId}`, JSON.stringify(game));
-            }
-        };
-
-        const handleGameFinished = (game: GameType) => {
-            setFinishedGames(prev => {
-                const exists = prev.some(g => g.id === game.id);
-                if (exists) return prev;
-                return [game, ...prev];
-            });
-        };
-
-        gameService.onGameCreated(handleGameCreated);
-        gameService.onGameJoined(handleGameJoined);
-        gameService.onGameUpdated(handleGameUpdated);
-        gameService.onGameFinished(handleGameFinished);
-
-        return () => {
-            gameService.offGameCreated(handleGameCreated);
-            gameService.offGameJoined(handleGameJoined);
-            gameService.offGameUpdated(handleGameUpdated);
-            gameService.offGameFinished(handleGameFinished);
-        };
-    }, [gameService, playerName, currentGame?.id, tabId]);
-
-    useEffect(() => {
-        let mounted = true;
-        let intervalId: NodeJS.Timeout;
-
-        const fetchRooms = async () => {
-            try {
-                const [availableRoomsData, finishedGamesData] = await Promise.all([
-                    gameService.getAvailableRooms(),
-                    gameService.getFinishedGames()
-                ]);
-                if (mounted) {
-                    setAvailableRooms(availableRoomsData || []);
-                    setFinishedGames(finishedGamesData || []);
-                }
-            } catch (error) {
-                console.error('Error fetching rooms:', error);
-                if (mounted) {
-                    setAvailableRooms([]);
-                    setFinishedGames([]);
-                }
-            }
-        };
-
-        // Lấy danh sách phòng ngay khi component mount
-        fetchRooms();
-
-        // Cập nhật mỗi 3 giây thay vì 2 giây
-        intervalId = setInterval(fetchRooms, 3000);
-
-        return () => {
-            mounted = false;
-            if (intervalId) {
-                clearInterval(intervalId);
-            }
-        };
-    }, []);
 
     const handleCreateGame = async () => {
         if (!playerName || !roomName) {

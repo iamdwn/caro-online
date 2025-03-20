@@ -30,10 +30,6 @@ namespace caro_online.Services
                     .OrderByDescending(g => g.CreatedAt)
                     .ToList();
 
-                LogRoomsInfo("BroadcastAvailableRooms", rooms);
-                await _hubContext.Clients.All.SendAsync("AvailableRooms", rooms);
-                
-                await Task.Delay(1000);
                 await _hubContext.Clients.All.SendAsync("AvailableRooms", rooms);
             }
             catch (Exception ex)
@@ -221,15 +217,13 @@ namespace caro_online.Services
                 }
 
                 game.Board[index] = playerId == game.Player1Id ? 1 : 2;
-
                 game.CurrentTurn = playerId == game.Player1Id ? game.Player2Id : game.Player1Id;
 
                 CheckWinner(game, row, col);
-
                 _games.TryUpdate(game.RoomName, game, game);
-                LogGameInfo("MakeMove", game);
             }
 
+            // Chỉ gửi cập nhật game, không cần broadcast danh sách phòng
             await _hubContext.Clients.All.SendAsync("GameUpdated", game);
             return game;
         }
@@ -285,35 +279,14 @@ namespace caro_online.Services
 
         private void LogGameInfo(string action, Game game)
         {
-            Console.WriteLine($"[{action}] Game: {game.RoomName} by {game.Player1Name}");
-            Console.WriteLine($"Game ID: {game.Id}");
-            Console.WriteLine($"Status: {game.Status}");
-            Console.WriteLine($"Total games: {_games.Count}");
-            Console.WriteLine($"Available rooms: {_games.Values.Count(g => g.Status == "Waiting")}");
-            Console.WriteLine("All rooms:");
-            foreach (var room in _games.Values)
-            {
-                Console.WriteLine($"- Room: {room.RoomName}, Status: {room.Status}, Creator: {room.Player1Name}, Player2: {room.Player2Name ?? "Waiting..."}");
-            }
-            Console.WriteLine($"Game details: {System.Text.Json.JsonSerializer.Serialize(game)}");
-            Console.WriteLine("----------------------------------------");
+            // Chỉ log thông tin cần thiết
+            Console.WriteLine($"[{action}] Game: {game.RoomName}, Status: {game.Status}, Turn: {game.CurrentTurn}");
         }
 
         private void LogRoomsInfo(string action, List<Game> rooms)
         {
+            // Chỉ log số lượng phòng
             Console.WriteLine($"[{action}] Found {rooms.Count} rooms");
-            Console.WriteLine($"Total games in memory: {_games.Count}");
-            Console.WriteLine("Available rooms:");
-            foreach (var room in rooms)
-            {
-                Console.WriteLine($"- Room: {room.RoomName}, Status: {room.Status}, Creator: {room.Player1Name}, Player2: {room.Player2Name ?? "Waiting..."}");
-            }
-            Console.WriteLine("All rooms in memory:");
-            foreach (var room in _games.Values)
-            {
-                Console.WriteLine($"- Room: {room.RoomName}, Status: {room.Status}, Creator: {room.Player1Name}, Player2: {room.Player2Name ?? "Waiting..."}");
-            }
-            Console.WriteLine("----------------------------------------");
         }
 
         public IEnumerable<Game> GetFinishedGames()

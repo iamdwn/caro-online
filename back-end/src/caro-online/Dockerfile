@@ -12,7 +12,7 @@ COPY ["back-end/src/caro-online/caro-online.csproj", "caro-online/"]
 RUN dotnet restore "./caro-online/caro-online.csproj"
 COPY . .
 WORKDIR "/src/caro-online"
-RUN dotnet build "caro-online.csproj" -c $BUILD_CONFIGURATION -o /app/build
+RUN dotnet build "./caro-online.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
 FROM build AS publish
 ARG BUILD_CONFIGURATION=Release

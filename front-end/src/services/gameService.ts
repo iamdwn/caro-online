@@ -18,11 +18,14 @@ class GameService {
     private async setupConnection() {
         if (this.connection) return;
 
+        const apiUrl = process.env.REACT_APP_API_BASE_URL || "http://localhost:5071";
+
         this.connection = new HubConnectionBuilder()
-            .withUrl('http://localhost:5071/gameHub')
+            .withUrl(`${apiUrl}/gameHub`)
             .withAutomaticReconnect([0, 1000, 2000, 5000])
             .configureLogging(LogLevel.Warning)
             .build();
+        
 
         this.connection.on('gameCreated', (game: Game) => {
             if (this.gameCreatedCallback) {

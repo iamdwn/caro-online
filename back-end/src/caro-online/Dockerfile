@@ -9,7 +9,7 @@ FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
 COPY ["back-end/src/caro-online/caro-online.csproj", "caro-online/"]
-RUN dotnet restore "./src/caro-online/caro-online.csproj"
+RUN dotnet restore "./caro-online/caro-online.csproj"
 COPY . .
 WORKDIR "/src/caro-online"
 RUN dotnet build "./caro-online.csproj" -c $BUILD_CONFIGURATION -o /app/build

@@ -1,0 +1,44 @@
+name: DockerImage
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build_and_deploy:
+    runs-on: [self-hosted]
+    env:
+      CONTAINER_NAME: caro_online
+      IMAGE_NAME: caro_online
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Build Docker Image
+        run: |
+          INAME=${{ env.IMAGE_NAME }}
+          docker build -t $INAME -f ./back-end/src/caro-online/Dockerfile .
+
+      - name: Manage Docker Container
+        run: |
+          CNAME=${{ env.CONTAINER_NAME }}
+          INAME=${{ env.IMAGE_NAME }}
+
+          if [ "$(docker ps -aq -f name=$CNAME)" ]; then
+              if [ "$(docker ps -aq -f status=exited -f name=$CNAME)" ]; then
+                  echo ":: Container $CNAME exists and is exited"
+                  echo ":: Removing exited container - $CNAME"
+                  docker rm $CNAME
+              else
+                  echo ":: Container $CNAME exists and is running"
+                  echo ":: Stopping running container - $CNAME"
+                  docker stop $CNAME
+                  echo ":: Removing stopped container - $CNAME"
+                  docker rm $CNAME
+              fi
+          else
+              echo ":: No existing container named $CNAME"
+          fi
+
+          echo ":: Running new container - $CNAME"
+          docker run -d -p 8080:8080 --name $CNAME $INAME

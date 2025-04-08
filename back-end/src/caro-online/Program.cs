@@ -19,11 +19,11 @@ builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(builder =>
     {
-        builder.WithOrigins("http://localhost:3002")
-               .AllowAnyMethod()
-               .AllowAnyHeader()
-               .AllowCredentials()
-               .SetIsOriginAllowed(origin => true);
+        builder
+            .SetIsOriginAllowed(origin => true)
+            .AllowAnyMethod()
+            .AllowAnyHeader()
+            .AllowCredentials();
     });
 });
 

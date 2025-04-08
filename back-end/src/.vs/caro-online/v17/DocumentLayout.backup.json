@@ -50,8 +50,7 @@
               "RelativeToolTip": "caro-online\\Models\\Types.cs",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-03-20T12:11:19.99Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-03-20T12:11:19.99Z"
             },
             {
               "$type": "Document",
@@ -63,8 +62,7 @@
               "RelativeToolTip": "caro-online\\Models\\Game.cs",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAA8AAAA6AAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-03-20T12:11:16.775Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-03-20T12:11:16.775Z"
             },
             {
               "$type": "Document",
@@ -76,8 +74,7 @@
               "RelativeToolTip": "caro-online\\Services\\GameService.cs",
               "ViewState": "AgIAACMBAAAAAAAAAAAAAMUAAAAwAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-03-20T05:55:27.676Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-03-20T05:55:27.676Z"
             },
             {
               "$type": "Document",
@@ -89,8 +86,7 @@
               "RelativeToolTip": "caro-online\\Services\\IGameService.cs",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAABAAAAACAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-03-19T18:22:45.23Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-03-19T18:22:45.23Z"
             },
             {
               "$type": "Document",
@@ -112,7 +108,7 @@
               "RelativeDocumentMoniker": "caro-online\\Hubs\\GameHub.cs",
               "ToolTip": "D:\\Docm\\.project\\.personal\\games\\caro-online\\back-end\\src\\caro-online\\Hubs\\GameHub.cs",
               "RelativeToolTip": "caro-online\\Hubs\\GameHub.cs",
-              "ViewState": "AgIAAGsAAAAAAAAAAAAEwIUAAAAzAAAAAAAAAA==",
+              "ViewState": "AgIAAGMAAAAAAAAAAAAgwGcAAAAJAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2025-03-19T17:52:35.222Z",
               "EditorCaption": ""

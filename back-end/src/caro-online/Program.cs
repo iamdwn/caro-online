@@ -26,6 +26,7 @@ builder.Services.AddCors(options =>
     });
 });
 
+
 // Add SignalR
 builder.Services.AddSignalR();
 
@@ -36,24 +37,23 @@ var app = builder.Build();
 // Configure the HTTP request pipeline.
 app.UseSwagger();
 app.UseSwaggerUI();
-
 app.UseCors("CorsPolicy");
-
 app.UseRouting();
 
-app.UseExceptionHandler(errorApp =>
-{
-    errorApp.Run(async context =>
-    {
-        context.Response.StatusCode = 500;
-        context.Response.ContentType = "application/json";
-        var error = context.Features.Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerFeature>();
-        if (error != null)
-        {
-            await context.Response.WriteAsJsonAsync(new { error = error.Error.Message });
-        }
-    });
-});
+
+//app.UseExceptionHandler(errorApp =>
+//{
+//    errorApp.Run(async context =>
+//    {
+//        context.Response.StatusCode = 500;
+//        context.Response.ContentType = "application/json";
+//        var error = context.Features.Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerFeature>();
+//        if (error != null)
+//        {
+//            await context.Response.WriteAsJsonAsync(new { error = error.Error.Message });
+//        }
+//    });
+//});
 
 // Map SignalR hub
 app.MapHub<GameHub>("/gameHub");

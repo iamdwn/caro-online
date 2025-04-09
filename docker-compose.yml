@@ -11,16 +11,16 @@ services:
     networks:
       - caro_network
 
-  frontend:
+  frontend: 
     build:
       context: ./front-end
       dockerfile: Dockerfile
       args:
-        REACT_APP_API_BASE_URL: https://caro-be.iamdwn.dev:8080
+        REACT_APP_API_BASE_URL: https://caro-be.iamdwn.dev
     ports:
       - "3000:80"
     environment:
-      - REACT_APP_API_BASE_URL=https://caro-be.iamdwn.dev:8080
+      - REACT_APP_API_BASE_URL=https://caro-be.iamdwn.dev
     container_name: caro_frontend
     depends_on:
       - backend

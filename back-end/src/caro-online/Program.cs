@@ -17,14 +17,14 @@ builder.Services.AddSwaggerGen(c =>
 // Add CORS
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("CorsPolicy", builder =>
+    options.AddPolicy("AllowAllOrigins", policy =>
     {
-        builder.WithOrigins("https://caro.iamdwn.dev")
-               .AllowAnyHeader()
-               .AllowAnyMethod()
-               .AllowCredentials();
+        policy.AllowAnyOrigin()
+              .AllowAnyMethod()
+              .AllowAnyHeader();
     });
 });
+
 
 
 // Add SignalR
@@ -34,11 +34,12 @@ builder.Services.AddScoped<IGameService, GameService>();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
 app.UseSwagger();
 app.UseSwaggerUI();
-app.UseCors("CorsPolicy");
+app.UseCors("AllowAllOrigins");
 app.UseRouting();
+app.MapHub<GameHub>("/gameHub");  // Map SignalR hub
+app.MapControllers();
 
 
 //app.UseExceptionHandler(errorApp =>
@@ -54,12 +55,6 @@ app.UseRouting();
 //        }
 //    });
 //});
-
-// Map SignalR hub
-app.MapHub<GameHub>("/gameHub");
-
-// Map controllers
-app.MapControllers();
 
 app.Run();
 

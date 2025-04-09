@@ -75,11 +75,11 @@ class GameService {
         if (!this.connection) {
             await this.setupConnection();
         }
-
-        if (this.connection.state === HubConnectionState.Disconnected && !this.connectionPromise) {
+    
+        if (this.connection && this.connection.state === HubConnectionState.Disconnected && !this.connectionPromise) {
             this.connectionPromise = this.connection.start();
         }
-
+    
         try {
             await this.connectionPromise;
         } catch (error) {
@@ -87,7 +87,7 @@ class GameService {
             console.error('Failed to establish connection:', error);
             throw error;
         }
-    }
+    }    
 
     public onError(callback: (message: string) => void) {
         this.errorCallback = callback;

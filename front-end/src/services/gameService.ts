@@ -18,7 +18,7 @@ class GameService {
     private async setupConnection() {
         if (this.connection) return;
 
-        const apiUrl = process.env.REACT_APP_API_BASE_URL || "http://localhost:5071";
+        const apiUrl = process.env.REACT_APP_API_BASE_URL || "https://caro-be.iamdwn.dev";
 
         this.connection = new HubConnectionBuilder()
             .withUrl(`${apiUrl}/gameHub`)

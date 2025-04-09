@@ -66,5 +66,5 @@ app.MapHub<GameHub>("/gameHub");
 // Map controllers
 app.MapControllers();
 
-app.Run("http://0.0.0.0:8080");
+app.Run();
 

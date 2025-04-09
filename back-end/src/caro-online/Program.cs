@@ -17,13 +17,12 @@ builder.Services.AddSwaggerGen(c =>
 // Add CORS
 builder.Services.AddCors(options =>
 {
-    options.AddDefaultPolicy(builder =>
+    options.AddPolicy("CorsPolicy", builder =>
     {
-        builder
-            .SetIsOriginAllowed(origin => true)
-            .AllowAnyMethod()
-            .AllowAnyHeader()
-            .AllowCredentials();
+        builder.WithOrigins("https://caro.iamdwn.dev")
+               .AllowAnyHeader()
+               .AllowAnyMethod()
+               .AllowCredentials();
     });
 });
 
@@ -42,7 +41,6 @@ app.UseCors();
 
 app.UseRouting();
 
-// Thêm middleware xử lý lỗi
 app.UseExceptionHandler(errorApp =>
 {
     errorApp.Run(async context =>

@@ -22,7 +22,6 @@ namespace caro_online.Hubs
             await base.OnConnectedAsync();
             await Clients.Caller.SendAsync("connected", Context.ConnectionId);
             
-            // Gửi danh sách phòng ngay khi client kết nối
             var rooms = await _gameService.GetAvailableRooms();
             await Clients.Caller.SendAsync("availableRooms", rooms);
         }
@@ -39,11 +38,9 @@ namespace caro_online.Hubs
                 var game = await _gameService.CreateGame(playerName, roomName);
                 await Clients.All.SendAsync("gameCreated", game);
                 
-                // Gửi lại danh sách phòng cho tất cả clients
                 var rooms = await _gameService.GetAvailableRooms();
                 await Clients.All.SendAsync("availableRooms", rooms);
 
-                // Log để debug
                 Console.WriteLine($"Sending gameCreated event for room: {roomName}");
                 Console.WriteLine($"Sending updated available rooms to all clients");
             }
@@ -60,11 +57,9 @@ namespace caro_online.Hubs
                 var game = await _gameService.JoinGame(roomName, playerName);
                 await Clients.All.SendAsync("gameJoined", game);
                 
-                // Gửi lại danh sách phòng cho tất cả clients
                 var rooms = await _gameService.GetAvailableRooms();
                 await Clients.All.SendAsync("availableRooms", rooms);
 
-                // Log để debug
                 Console.WriteLine($"Sending gameJoined event for room: {roomName}");
                 Console.WriteLine($"Sending updated available rooms to all clients");
             }
@@ -81,7 +76,6 @@ namespace caro_online.Hubs
                 var rooms = await _gameService.GetAvailableRooms();
                 await Clients.Caller.SendAsync("availableRooms", rooms);
 
-                // Log để debug
                 Console.WriteLine($"Sending available rooms to caller");
             }
             catch (Exception ex)

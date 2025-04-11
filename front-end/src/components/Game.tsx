@@ -124,7 +124,6 @@ const FinishedGameInfo = styled.div`
 `;
 
 export const Game: React.FC = () => {
-    // Tạo một ID duy nhất cho mỗi tab
     const [tabId] = useState(() => Math.random().toString(36).substring(7));
     const [playerName, setPlayerName] = useState(() => localStorage.getItem('playerName') || '');
     const [roomName, setRoomName] = useState('');
@@ -142,14 +141,12 @@ export const Game: React.FC = () => {
     const [isJoining, setIsJoining] = useState(false);
     const [isMakingMove, setIsMakingMove] = useState(false);
 
-    // Lưu playerName khi thay đổi (dùng chung cho tất cả các tab)
     useEffect(() => {
         if (playerName) {
             localStorage.setItem('playerName', playerName);
         }
     }, [playerName]);
 
-    // Lưu thông tin game hiện tại cho tab này
     useEffect(() => {
         if (currentGame) {
             localStorage.setItem(`currentGame_${tabId}`, JSON.stringify(currentGame));
@@ -158,7 +155,6 @@ export const Game: React.FC = () => {
         }
     }, [currentGame, tabId]);
 
-    // Lưu currentPlayerId cho tab này
     useEffect(() => {
         if (currentPlayerId) {
             localStorage.setItem(`currentPlayerId_${tabId}`, currentPlayerId);
@@ -167,7 +163,6 @@ export const Game: React.FC = () => {
         }
     }, [currentPlayerId, tabId]);
 
-    // Tự động kết nối lại vào phòng khi refresh (chỉ cho tab này)
     useEffect(() => {
         const reconnectToGame = async () => {
             const savedGame = localStorage.getItem(`currentGame_${tabId}`);
@@ -176,21 +171,17 @@ export const Game: React.FC = () => {
             if (savedGame && savedPlayerId && playerName) {
                 const game = JSON.parse(savedGame);
                 try {
-                    // Kiểm tra xem là người tạo phòng hay người tham gia
                     if (game.player1Name === playerName) {
-                        // Nếu là người tạo phòng, tạo lại phòng với thông tin cũ
                         const reconnectedGame = await gameService.createGame(playerName, game.roomName);
                         setCurrentGame(reconnectedGame);
                         setCurrentPlayerId(reconnectedGame.player1Id);
                     } else {
-                        // Nếu là người tham gia, join lại vào phòng
                         const reconnectedGame = await gameService.joinGame(game.roomName, playerName);
                         setCurrentGame(reconnectedGame);
                         setCurrentPlayerId(reconnectedGame.player2Id);
                     }
                 } catch (error) {
                     console.error('Reconnect error:', error);
-                    // Nếu không thể kết nối lại, xóa thông tin game của tab này
                     setCurrentGame(null);
                     setCurrentPlayerId(null);
                     localStorage.removeItem(`currentGame_${tabId}`);
@@ -198,7 +189,6 @@ export const Game: React.FC = () => {
                 }
             }
             
-            // Luôn lấy danh sách phòng mới nhất sau khi reconnect
             try {
                 const rooms = await gameService.getAvailableRooms();
                 if (Array.isArray(rooms)) {
@@ -280,7 +270,6 @@ export const Game: React.FC = () => {
                     }
                 });
 
-                // Lấy danh sách phòng và game kết thúc lần đầu
                 const [initialRooms, finishedGames] = await Promise.all([
                     gameService.getAvailableRooms(),
                     gameService.getFinishedGames()
@@ -367,16 +356,13 @@ export const Game: React.FC = () => {
     const handleExitRoom = async () => {
         try {
             if (currentGame) {
-                // Nếu là người tạo phòng, xóa phòng
                 if (currentGame.player1Name === playerName) {
                     await gameService.deleteRoom(currentGame.roomName);
                 }
-                // Nếu là người chơi 2, rời phòng
                 else if (currentGame.player2Name === playerName) {
                     await gameService.leaveRoom(currentGame.roomName, playerName);
                 }
             }
-            // Xóa thông tin game của tab này
             setCurrentGame(null);
             setCurrentPlayerId(null);
             localStorage.removeItem(`currentGame_${tabId}`);
@@ -387,7 +373,6 @@ export const Game: React.FC = () => {
         }
     };
 
-    // Nếu đang trong game, hiển thị bàn cờ
     if (currentGame) {
         return (
             <Board 
@@ -399,7 +384,6 @@ export const Game: React.FC = () => {
         );
     }
 
-    // Nếu không, hiển thị giao diện tạo/tham gia phòng
     return (
         <GameContainer>
             <JoinGameForm>

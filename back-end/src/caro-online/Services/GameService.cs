@@ -223,7 +223,6 @@ namespace caro_online.Services
                 _games.TryUpdate(game.RoomName, game, game);
             }
 
-            // Chỉ gửi cập nhật game, không cần broadcast danh sách phòng
             await _hubContext.Clients.All.SendAsync("GameUpdated", game);
             return game;
         }
@@ -232,13 +231,12 @@ namespace caro_online.Services
         {
             var directions = new[]
             {
-                (1, 0),   // Ngang
-                (0, 1),   // Dọc
-                (1, 1),   // Chéo xuống
-                (1, -1)   // Chéo lên
+                (1, 0), 
+                (0, 1),  
+                (1, 1), 
+                (1, -1)
             };
 
-            // Lấy người chơi vừa đánh (người đánh cuối cùng)
             var lastPlayerId = game.CurrentTurn == game.Player1Id ? game.Player2Id : game.Player1Id;
             var currentPlayer = lastPlayerId == game.Player1Id ? 1 : 2;
 
@@ -246,7 +244,6 @@ namespace caro_online.Services
             {
                 var count = 1;
 
-                // Kiểm tra theo hướng thuận
                 for (var i = 1; i < 5; i++)
                 {
                     var newRow = row + dx * i;
@@ -256,7 +253,6 @@ namespace caro_online.Services
                     count++;
                 }
 
-                // Kiểm tra theo hướng ngược
                 for (var i = 1; i < 5; i++)
                 {
                     var newRow = row - dx * i;
@@ -279,13 +275,11 @@ namespace caro_online.Services
 
         private void LogGameInfo(string action, Game game)
         {
-            // Chỉ log thông tin cần thiết
             Console.WriteLine($"[{action}] Game: {game.RoomName}, Status: {game.Status}, Turn: {game.CurrentTurn}");
         }
 
         private void LogRoomsInfo(string action, List<Game> rooms)
         {
-            // Chỉ log số lượng phòng
             Console.WriteLine($"[{action}] Found {rooms.Count} rooms");
         }
 

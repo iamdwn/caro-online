@@ -26,7 +26,8 @@ class GameService {
         }
 
         this.connection = new HubConnectionBuilder()
-            .withUrl(apiUrl)
+            // .withUrl(apiUrl)
+            .withUrl('http://localhost:5071/gameHub')
             .withAutomaticReconnect([0, 1000, 2000, 5000])
             .configureLogging(LogLevel.Warning)
             .build();

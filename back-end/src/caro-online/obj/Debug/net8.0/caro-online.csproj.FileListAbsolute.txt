@@ -1,3 +1,11 @@
+D:\Docm\.project\.personal\games\caro-online\back-end\src\caro-online\obj\Debug\net8.0\caro-online.csproj.AssemblyReference.cache
+D:\Docm\.project\.personal\games\caro-online\back-end\src\caro-online\obj\Debug\net8.0\caro-online.GeneratedMSBuildEditorConfig.editorconfig
+D:\Docm\.project\.personal\games\caro-online\back-end\src\caro-online\obj\Debug\net8.0\caro-online.AssemblyInfoInputs.cache
+D:\Docm\.project\.personal\games\caro-online\back-end\src\caro-online\obj\Debug\net8.0\caro-online.AssemblyInfo.cs
+D:\Docm\.project\.personal\games\caro-online\back-end\src\caro-online\obj\Debug\net8.0\caro-online.csproj.CoreCompileInputs.cache
+D:\Docm\.project\.personal\games\caro-online\back-end\src\caro-online\obj\Debug\net8.0\caro-online.MvcApplicationPartsAssemblyInfo.cs
+D:\Docm\.project\.personal\games\caro-online\back-end\src\caro-online\obj\Debug\net8.0\caro-online.MvcApplicationPartsAssemblyInfo.cache
+D:\Docm\.project\.personal\games\caro-online\back-end\src\caro-online\obj\Debug\net8.0\caro-online.sourcelink.json
 D:\Docm\.project\.personal\games\caro-online\back-end\src\caro-online\bin\Debug\net8.0\appsettings.Development.json
 D:\Docm\.project\.personal\games\caro-online\back-end\src\caro-online\bin\Debug\net8.0\appsettings.json
 D:\Docm\.project\.personal\games\caro-online\back-end\src\caro-online\bin\Debug\net8.0\caro-online.staticwebassets.endpoints.json
@@ -10,14 +18,6 @@ D:\Docm\.project\.personal\games\caro-online\back-end\src\caro-online\bin\Debug\
 D:\Docm\.project\.personal\games\caro-online\back-end\src\caro-online\bin\Debug\net8.0\Swashbuckle.AspNetCore.Swagger.dll
 D:\Docm\.project\.personal\games\caro-online\back-end\src\caro-online\bin\Debug\net8.0\Swashbuckle.AspNetCore.SwaggerGen.dll
 D:\Docm\.project\.personal\games\caro-online\back-end\src\caro-online\bin\Debug\net8.0\Swashbuckle.AspNetCore.SwaggerUI.dll
-D:\Docm\.project\.personal\games\caro-online\back-end\src\caro-online\obj\Debug\net8.0\caro-online.csproj.AssemblyReference.cache
-D:\Docm\.project\.personal\games\caro-online\back-end\src\caro-online\obj\Debug\net8.0\caro-online.GeneratedMSBuildEditorConfig.editorconfig
-D:\Docm\.project\.personal\games\caro-online\back-end\src\caro-online\obj\Debug\net8.0\caro-online.AssemblyInfoInputs.cache
-D:\Docm\.project\.personal\games\caro-online\back-end\src\caro-online\obj\Debug\net8.0\caro-online.AssemblyInfo.cs
-D:\Docm\.project\.personal\games\caro-online\back-end\src\caro-online\obj\Debug\net8.0\caro-online.csproj.CoreCompileInputs.cache
-D:\Docm\.project\.personal\games\caro-online\back-end\src\caro-online\obj\Debug\net8.0\caro-online.MvcApplicationPartsAssemblyInfo.cs
-D:\Docm\.project\.personal\games\caro-online\back-end\src\caro-online\obj\Debug\net8.0\caro-online.MvcApplicationPartsAssemblyInfo.cache
-D:\Docm\.project\.personal\games\caro-online\back-end\src\caro-online\obj\Debug\net8.0\caro-online.sourcelink.json
 D:\Docm\.project\.personal\games\caro-online\back-end\src\caro-online\obj\Debug\net8.0\scopedcss\bundle\caro-online.styles.css
 D:\Docm\.project\.personal\games\caro-online\back-end\src\caro-online\obj\Debug\net8.0\staticwebassets.build.json
 D:\Docm\.project\.personal\games\caro-online\back-end\src\caro-online\obj\Debug\net8.0\staticwebassets.development.json

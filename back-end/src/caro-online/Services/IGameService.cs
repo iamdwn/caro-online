@@ -11,7 +11,7 @@ namespace caro_online.Services
         Task<IEnumerable<Game>> GetAvailableRooms();
         Task DeleteRoom(string roomName);
         IEnumerable<Game> GetFinishedGames();
-        Task LeaveRoom(string roomName, string playerName);
+        Task LeaveRoom(string roomName, string userId);
         Task<Game> MakeMove(string gameId, string playerId, int row, int col);
     }
 } 

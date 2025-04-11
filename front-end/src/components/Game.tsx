@@ -315,12 +315,12 @@ export const Game: React.FC = () => {
 
     const handleCreateGame = async () => {
         if (!playerName || !roomName) {
-            alert('Vui lòng nhập đầy đủ thông tin');
+            gameService.showError('Vui lòng nhập đầy đủ thông tin');
             return;
         }
 
         if (availableRooms.some(room => room.roomName === roomName)) {
-            alert('Tên phòng đã tồn tại');
+            gameService.showError('Tên phòng đã tồn tại');
             return;
         }
 
@@ -330,14 +330,14 @@ export const Game: React.FC = () => {
             setRoomName('');
         } catch (error) {
             console.error('Create game error:', error);
-            alert('Không thể tạo game');
+            gameService.showError('Không thể tạo game');
             setIsCreating(false);
         }
     };
 
     const handleJoinGame = async (roomName: string) => {
         if (!playerName) {
-            alert('Vui lòng nhập tên người chơi');
+            gameService.showError('Vui lòng nhập tên người chơi');
             return;
         }
         try {
@@ -345,7 +345,7 @@ export const Game: React.FC = () => {
             await gameService.joinGame(roomName, playerName, userId);
         } catch (error) {
             console.error('Join game error:', error);
-            alert('Không thể tham gia game');
+            gameService.showError('Không thể tham gia game');
             setIsJoining(false);
         }
     };
@@ -358,7 +358,7 @@ export const Game: React.FC = () => {
             await gameService.makeMove(currentGame.id, currentPlayerId, row, col);
         } catch (error) {
             console.error('Make move error:', error);
-            alert('Không thể đánh vào ô này');
+            gameService.showError('Không thể đánh vào ô này');
         } finally {
             setIsMakingMove(false);
         }
@@ -367,20 +367,25 @@ export const Game: React.FC = () => {
     const handleExitRoom = async () => {
         try {
             if (currentGame) {
-                if (currentGame.player1Name === playerName) {
-                    await gameService.deleteRoom(currentGame.roomName);
+                if (currentGame.status === "Finished") {
+                    setCurrentGame(null);
+                    setCurrentPlayerId(null);
+                    localStorage.removeItem(`currentGame_${tabId}`);
+                    localStorage.removeItem(`currentPlayerId_${tabId}`);
+                    return;
                 }
-                else if (currentGame.player2Name === playerName) {
-                    await gameService.leaveRoom(currentGame.roomName, playerName);
-                }
+
+                await gameService.leaveRoom(currentGame.roomName, userId);
+                setTimeout(() => {
+                    setCurrentGame(null);
+                    setCurrentPlayerId(null);
+                    localStorage.removeItem(`currentGame_${tabId}`);
+                    localStorage.removeItem(`currentPlayerId_${tabId}`);
+                }, 2000);
             }
-            setCurrentGame(null);
-            setCurrentPlayerId(null);
-            localStorage.removeItem(`currentGame_${tabId}`);
-            localStorage.removeItem(`currentPlayerId_${tabId}`);
         } catch (error) {
             console.error('Exit room error:', error);
-            alert('Không thể thoát phòng');
+            gameService.showError('Không thể thoát phòng');
         }
     };
 

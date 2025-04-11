@@ -213,6 +213,12 @@ class GameService {
         if (!this.connection) return;
         this.connection.off('GameFinished', callback);
     }
+
+    public showError(message: string) {
+        if (this.errorCallback) {
+            this.errorCallback(message);
+        }
+    }
 }
 
 export const gameService = new GameService(); 

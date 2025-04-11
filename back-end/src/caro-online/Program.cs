@@ -53,6 +53,7 @@ app.UseExceptionHandler(errorApp =>
 });
 
 app.MapHub<GameHub>("/gameHub");
+
 app.MapControllers();
 
 app.Run();

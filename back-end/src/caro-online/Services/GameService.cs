@@ -292,7 +292,24 @@ namespace caro_online.Services
 
         public void AddFinishedGame(Game game)
         {
-            _finishedGames.TryAdd(game.Id, game);
+            // Tạo bản sao của game để tránh tham chiếu
+            var finishedGame = new Game
+            {
+                Id = game.Id,
+                RoomName = game.RoomName,
+                Player1Id = game.Player1Id,
+                Player1Name = game.Player1Name,
+                Player2Id = game.Player2Id,
+                Player2Name = game.Player2Name,
+                Status = game.Status,
+                Winner = game.Winner,
+                Board = game.Board.ToArray(),
+                CurrentTurn = game.CurrentTurn,
+                CreatedAt = game.CreatedAt,
+                EndedAt = DateTime.UtcNow
+            };
+
+            _finishedGames.TryAdd(finishedGame.Id, finishedGame);
 
             if (_finishedGames.Count > 50)
             {

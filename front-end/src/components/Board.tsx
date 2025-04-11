@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import styled from 'styled-components';
 import { Game } from '../types/game';
 
@@ -116,6 +116,13 @@ const ExitButton = styled.button`
     font-weight: 500;
     transition: all 0.2s ease;
     box-shadow: 0 2px 8px rgba(239, 68, 68, 0.15);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 120px;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
 
     &:hover {
         transform: translateY(-1px);
@@ -124,6 +131,198 @@ const ExitButton = styled.button`
 
     &:active {
         transform: translateY(0);
+    }
+
+    &:disabled {
+        opacity: 0.9;
+        cursor: not-allowed;
+        transform: none;
+    }
+
+    @keyframes drive {
+        0% {
+            transform: translateX(-120%) scale(0.8);
+        }
+        15% {
+            transform: translateX(-50%) scale(1);
+        }
+        75% {
+            transform: translateX(30%) scale(1);
+        }
+        100% {
+            transform: translateX(200%) scale(0.8) rotate(-5deg);
+        }
+    }
+
+    @keyframes bounce {
+        0%, 100% {
+            transform: translateY(0) rotate(-1deg);
+        }
+        50% {
+            transform: translateY(-2px) rotate(1deg);
+        }
+    }
+
+    @keyframes smoke {
+        0% {
+            transform: translate(0, 0) scale(1);
+            opacity: 0.8;
+            filter: blur(2px);
+        }
+        100% {
+            transform: translate(-15px, -10px) scale(0);
+            opacity: 0;
+            filter: blur(4px);
+        }
+    }
+
+    @keyframes flame {
+        0% {
+            transform: scaleX(1);
+            opacity: 0.9;
+            filter: blur(1px);
+        }
+        100% {
+            transform: scaleX(0.3);
+            opacity: 0;
+            filter: blur(2px);
+        }
+    }
+
+    .car-container {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .car {
+        position: relative;
+        width: 40px;
+        height: 18px;
+        animation: drive 1.5s cubic-bezier(0.3, 0, 0.3, 1) infinite;
+    }
+
+    .car-body {
+        position: absolute;
+        bottom: 0;
+        width: 40px;
+        height: 12px;
+        background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+        border-radius: 6px;
+        animation: bounce 0.5s ease-in-out infinite;
+
+        &::before {
+            content: '';
+            position: absolute;
+            top: -7px;
+            left: 8px;
+            width: 24px;
+            height: 9px;
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            border-radius: 8px 8px 0 0;
+            transform: skewX(-10deg);
+        }
+
+        &::after {
+            content: '';
+            position: absolute;
+            bottom: 2px;
+            right: 4px;
+            width: 4px;
+            height: 4px;
+            background: #60a5fa;
+            border-radius: 50%;
+            box-shadow: 0 0 4px #60a5fa;
+        }
+    }
+
+    .wheel {
+        position: absolute;
+        bottom: -2px;
+        width: 8px;
+        height: 8px;
+        background: #1e293b;
+        border-radius: 50%;
+        box-shadow: inset 0 0 2px rgba(255,255,255,0.5);
+        
+        &::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 4px;
+            height: 4px;
+            background: #94a3b8;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+        }
+        
+        &.front {
+            right: 4px;
+        }
+        
+        &.back {
+            left: 4px;
+        }
+    }
+
+    .smoke {
+        position: absolute;
+        left: 2px;
+        bottom: 2px;
+        width: 6px;
+        height: 6px;
+        background: rgba(255, 255, 255, 0.9);
+        border-radius: 50%;
+        animation: smoke 0.3s linear infinite;
+        box-shadow: 0 0 4px rgba(255,255,255,0.6);
+    }
+
+    .flame {
+        position: absolute;
+        left: -2px;
+        bottom: 4px;
+        width: 12px;
+        height: 4px;
+        background: linear-gradient(90deg, #fbbf24, #f87171);
+        border-radius: 4px;
+        animation: flame 0.1s linear infinite;
+        box-shadow: 0 0 8px rgba(251, 191, 36, 0.6);
+    }
+
+    .wind-line {
+        position: absolute;
+        height: 1px;
+        background: rgba(255,255,255,0.4);
+        animation: smoke 0.2s linear infinite;
+
+        &:nth-child(1) {
+            width: 12px;
+            left: -14px;
+            top: 2px;
+        }
+
+        &:nth-child(2) {
+            width: 8px;
+            left: -10px;
+            top: 6px;
+        }
+
+        &:nth-child(3) {
+            width: 10px;
+            left: -12px;
+            top: 10px;
+        }
+    }
+
+    .exit-text {
+        opacity: ${props => props.disabled ? 0 : 1};
+        transition: opacity 0.3s ease;
     }
 `;
 
@@ -250,10 +449,25 @@ interface BoardProps {
 }
 
 export const Board: React.FC<BoardProps> = ({ game, currentPlayerId, onCellClick, onExitRoom }) => {
+    const [isExiting, setIsExiting] = useState(false);
     const isMyTurn = game.currentTurn === currentPlayerId;
     const isPlayer1 = currentPlayerId === game.player1Id;
     const mySymbol = isPlayer1 ? 'X' : 'O';
     const opponentSymbol = isPlayer1 ? 'O' : 'X';
+
+    const handleExit = async () => {
+        setIsExiting(true);
+        try {
+            const exitPromise = onExitRoom();
+            await Promise.all([
+                exitPromise,
+                new Promise(resolve => setTimeout(resolve, 1900))
+            ]);
+        } finally {
+            await new Promise(resolve => setTimeout(resolve, 200));
+            setIsExiting(false);
+        }
+    };
 
     const renderCell = (index: number) => {
         const row = Math.floor(index / 15);
@@ -312,8 +526,31 @@ export const Board: React.FC<BoardProps> = ({ game, currentPlayerId, onCellClick
                         </TurnIndicator>
                     )}
                 </PlayerInfo>
-                <ExitButton onClick={onExitRoom}>
-                    {game.status === "Finished" ? 'Chơi lại' : 'Thoát phòng'}
+                <ExitButton onClick={handleExit} disabled={isExiting}>
+                    {isExiting ? (
+                        <>
+                            <span className="car-container">
+                                <div className="car">
+                                    <div className="car-body">
+                                        <div className="wheel front"></div>
+                                        <div className="wheel back"></div>
+                                    </div>
+                                    <div className="flame"></div>
+                                    <div className="smoke"></div>
+                                    <div className="wind-line"></div>
+                                    <div className="wind-line"></div>
+                                    <div className="wind-line"></div>
+                                </div>
+                            </span>
+                            <span style={{ opacity: 0 }}>
+                                {game.status === "Finished" ? 'Đang tải lại...' : 'Đang thoát...'}
+                            </span>
+                        </>
+                    ) : (
+                        <span className="exit-text">
+                            {game.status === "Finished" ? 'Chơi lại' : 'Thoát phòng'}
+                        </span>
+                    )}
                 </ExitButton>
             </GameInfo>
             <Grid>

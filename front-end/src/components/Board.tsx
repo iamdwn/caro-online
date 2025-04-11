@@ -35,19 +35,101 @@ const RoomTitle = styled.h2`
     font-size: 22px;
     font-weight: 600;
     font-family: 'Segoe UI', system-ui, sans-serif;
-    padding: 12px 16px;
-    background: #f8fafc;
+    padding: 16px 20px;
+    background: linear-gradient(135deg, #f8fafc, #f1f5f9);
     border-radius: 12px;
     border: 1px solid #e2e8f0;
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 12px;
     margin: 0;
     flex: 1;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.02);
 
     &::before {
-        content: '🎮';
-        font-size: 24px;
+        content: '';
+        width: 35px;
+        height: 32px;
+        background: linear-gradient(135deg, #fee2e2, #fecaca);
+        border-radius: 8px;
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+        animation: roomFloat 4s infinite ease-in-out;
+    }
+
+    &::after {
+        content: 'X O';
+        position: absolute;
+        left: 24px;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 15px;
+        font-weight: bold;
+        background: linear-gradient(90deg, #e74c3c, #3498db);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        animation: textFloat 4s infinite ease-in-out;
+        width: 32px;
+        text-align: center;
+        transform-origin: center center;
+        letter-spacing: 2px;
+    }
+
+    .shimmer {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 50%;
+        height: 100%;
+        background: linear-gradient(
+            90deg,
+            transparent 0%,
+            rgba(255, 255, 255, 0) 20%,
+            rgba(255, 255, 255, 0.8) 50%,
+            rgba(255, 255, 255, 0) 80%,
+            transparent 100%
+        );
+        animation: shimmer 6s infinite;
+        transform: skewX(-20deg);
+    }
+
+    @keyframes shimmer {
+        0% {
+            transform: translateX(-150%) skewX(-20deg);
+        }
+        50%, 100% {
+            transform: translateX(200%) skewX(-20deg);
+        }
+    }
+
+    @keyframes roomFloat {
+        0%, 100% { 
+            transform: translateY(0px); 
+        }
+        50% { 
+            transform: translateY(-2px); 
+        }
+    }
+
+    @keyframes textFloat {
+        0%, 100% { 
+            transform: translateY(-50%);
+            letter-spacing: 0;
+        }
+        25% {
+            transform: translateY(-50%);
+            letter-spacing: 1px;
+        }
+        75% {
+            transform: translateY(-50%);
+            letter-spacing: 1px;
+        }
     }
 `;
 
@@ -98,7 +180,7 @@ const PlayerCard = styled.div<{ isCurrentPlayer?: boolean; isWinner?: boolean }>
     }
 `;
 
-const PlayerSymbol = styled.div<{ isX?: boolean }>`
+const PlayerSymbol = styled.div<{ isX?: boolean; isMyTurn?: boolean }>`
     font-size: 36px;
     font-weight: 700;
     margin-bottom: 12px;
@@ -119,6 +201,27 @@ const PlayerSymbol = styled.div<{ isX?: boolean }>`
     align-items: center;
     justify-content: center;
     border-radius: 50%;
+    position: relative;
+
+    &::before {
+        content: ${props => props.isMyTurn ? '"⚔️"' : '"🛡️"'};
+        position: absolute;
+        font-size: 20px;
+        bottom: -8px;
+        right: -8px;
+        filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+        animation: ${props => props.isMyTurn ? 'swordFloat' : 'shieldFloat'} 3s infinite ease-in-out;
+    }
+
+    @keyframes swordFloat {
+        0%, 100% { transform: translate(0, 0) rotate(-5deg); }
+        50% { transform: translate(-1px, -1px) rotate(5deg); }
+    }
+
+    @keyframes shieldFloat {
+        0%, 100% { transform: translate(0, 0) scale(1); }
+        50% { transform: translate(-1px, -1px) scale(1.1); }
+    }
 `;
 
 const PlayerName = styled.div<{ isActive?: boolean }>`
@@ -573,7 +676,10 @@ export const Board: React.FC<BoardProps> = ({ game, currentPlayerId, onCellClick
         <BoardContainer>
             <GameInfo>
                 <TopBar>
-                    <RoomTitle>Phòng: {game.roomName}</RoomTitle>
+                    <RoomTitle>
+                        Phòng: {game.roomName}
+                        <div className="shimmer"></div>
+                    </RoomTitle>
                     <ExitButton onClick={handleExit} disabled={isExiting}>
                         {isExiting ? (
                             <>
@@ -606,7 +712,7 @@ export const Board: React.FC<BoardProps> = ({ game, currentPlayerId, onCellClick
                         isCurrentPlayer={isPlayer1} 
                         isWinner={game.winner === game.player1Id}
                     >
-                        <PlayerSymbol isX={true}>X</PlayerSymbol>
+                        <PlayerSymbol isX={true} isMyTurn={isPlayer1 && isMyTurn}>X</PlayerSymbol>
                         <PlayerLabel isActive={isPlayer1 || game.winner === game.player1Id}>
                             Người chơi 1
                         </PlayerLabel>
@@ -624,7 +730,7 @@ export const Board: React.FC<BoardProps> = ({ game, currentPlayerId, onCellClick
                         isCurrentPlayer={!isPlayer1} 
                         isWinner={game.winner === game.player2Id}
                     >
-                        <PlayerSymbol isX={false}>O</PlayerSymbol>
+                        <PlayerSymbol isX={false} isMyTurn={!isPlayer1 && isMyTurn}>O</PlayerSymbol>
                         <PlayerLabel isActive={!isPlayer1 || game.winner === game.player2Id}>
                             Người chơi 2
                         </PlayerLabel>

@@ -18,26 +18,48 @@ const GameInfo = styled.div`
     background: #ffffff;
     border-radius: 16px;
     display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
+    flex-direction: column;
+    gap: 20px;
     box-shadow: 0 4px 15px rgba(0,0,0,0.03);
 `;
 
-const PlayerInfo = styled.div`
-    flex: 1;
+const TopBar = styled.div`
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
 `;
 
 const RoomTitle = styled.h2`
     color: #2d3748;
-    margin-bottom: 20px;
     font-size: 22px;
     font-weight: 600;
     font-family: 'Segoe UI', system-ui, sans-serif;
+    padding: 12px 16px;
+    background: #f8fafc;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+    flex: 1;
+
+    &::before {
+        content: '🎮';
+        font-size: 24px;
+    }
 `;
 
-const PlayerStatus = styled.div<{ isCurrentPlayer?: boolean; isWinner?: boolean }>`
-    padding: 10px 16px;
-    margin: 8px 0;
+const PlayersContainer = styled.div`
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    width: 100%;
+`;
+
+const PlayerCard = styled.div<{ isCurrentPlayer?: boolean; isWinner?: boolean }>`
+    padding: 20px;
     background: ${props => 
         props.isWinner 
             ? 'linear-gradient(135deg, #4ade80, #22c55e)'
@@ -45,23 +67,85 @@ const PlayerStatus = styled.div<{ isCurrentPlayer?: boolean; isWinner?: boolean 
                 ? 'linear-gradient(135deg, #60a5fa, #3b82f6)'
                 : '#ffffff'
     };
-    color: ${props => (props.isCurrentPlayer || props.isWinner) ? '#ffffff' : '#4a5568'};
-    border-radius: 10px;
-    transition: all 0.2s ease;
-    font-size: 15px;
-    font-weight: 500;
+    border-radius: 12px;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
     box-shadow: ${props => 
         (props.isCurrentPlayer || props.isWinner) 
-            ? '0 2px 8px rgba(0,0,0,0.08)' 
-            : '0 1px 3px rgba(0,0,0,0.02)'
+            ? '0 8px 20px rgba(0,0,0,0.1)' 
+            : '0 4px 12px rgba(0,0,0,0.05)'
     };
-    border: 1px solid ${props => 
-        props.isWinner 
-            ? '#22c55e'
-            : props.isCurrentPlayer 
-                ? '#3b82f6'
-                : '#e2e8f0'
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+
+    &::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: ${props => 
+            props.isWinner 
+                ? '#22c55e'
+                : props.isCurrentPlayer 
+                    ? '#3b82f6'
+                    : '#e2e8f0'
+        };
+    }
+`;
+
+const PlayerSymbol = styled.div<{ isX?: boolean }>`
+    font-size: 36px;
+    font-weight: 700;
+    margin-bottom: 12px;
+    color: ${props => props.isX ? '#e74c3c' : '#3498db'};
+    text-shadow: ${props => 
+        props.isX 
+            ? '0 0 15px rgba(231, 76, 60, 0.3)'
+            : '0 0 15px rgba(52, 152, 219, 0.3)'
     };
+    background: ${props => 
+        props.isX 
+            ? 'linear-gradient(135deg, #fee2e2, #fecaca)'
+            : 'linear-gradient(135deg, #dbeafe, #bfdbfe)'
+    };
+    width: 60px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+`;
+
+const PlayerName = styled.div<{ isActive?: boolean }>`
+    font-size: 18px;
+    font-weight: 600;
+    color: ${props => props.isActive ? '#ffffff' : '#4a5568'};
+    margin-bottom: 8px;
+`;
+
+const PlayerLabel = styled.div<{ isActive?: boolean }>`
+    font-size: 14px;
+    color: ${props => props.isActive ? 'rgba(255,255,255,0.9)' : '#718096'};
+    margin-bottom: 16px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+`;
+
+const PlayerStatus = styled.div<{ isActive?: boolean }>`
+    font-size: 15px;
+    padding: 8px 16px;
+    background: ${props => props.isActive ? 'rgba(255,255,255,0.2)' : '#f1f5f9'};
+    color: ${props => props.isActive ? '#ffffff' : '#64748b'};
+    border-radius: 20px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: auto;
 
     .waiting {
         display: inline-block;
@@ -69,64 +153,49 @@ const PlayerStatus = styled.div<{ isCurrentPlayer?: boolean; isWinner?: boolean 
         transform-origin: center;
     }
 
-    @keyframes rotate {
-        0% {
-            transform: rotate(0deg);
-        }
-        100% {
-            transform: rotate(360deg);
-        }
-    }
-`;
-
-const TurnIndicator = styled.div<{ isMyTurn: boolean }>`
-    font-size: 15px;
-    color: ${props => props.isMyTurn ? '#047857' : '#991b1b'};
-    font-weight: 500;
-    margin-top: 16px;
-    padding: 10px 16px;
-    background: ${props => props.isMyTurn ? '#ecfdf5' : '#fef2f2'};
-    border-radius: 10px;
-    border: 1px solid ${props => props.isMyTurn ? '#6ee7b7' : '#fecaca'};
-
-    @keyframes rotate {
-        0% {
-            transform: rotate(0deg);
-        }
-        100% {
-            transform: rotate(360deg);
-        }
-    }
-
-    .hourglass {
+    .controller {
         display: inline-block;
-        animation: rotate 2s infinite linear;
+        animation: wiggle 1s infinite ease-in-out;
         transform-origin: center;
+    }
+
+    @keyframes rotate {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
+    @keyframes wiggle {
+        0% { transform: translateY(-2px) rotate(-15deg); }
+        25% { transform: translateY(-2px) rotate(0deg) scale(1.1); }
+        50% { transform: translateY(-2px) rotate(15deg); }
+        75% { transform: translateY(-2px) rotate(0deg) scale(1.1); }
+        100% { transform: translateY(-2px) rotate(-15deg); }
     }
 `;
 
 const ExitButton = styled.button`
-    padding: 10px 20px;
+    padding: 12px 24px;
     background: linear-gradient(135deg, #f87171, #ef4444);
     color: white;
     border: none;
-    border-radius: 10px;
+    border-radius: 12px;
     cursor: pointer;
-    font-size: 15px;
-    font-weight: 500;
+    font-size: 16px;
+    font-weight: 600;
     transition: all 0.2s ease;
-    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.15);
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.15);
     display: flex;
     align-items: center;
     gap: 8px;
-    min-width: 120px;
+    min-width: 140px;
     justify-content: center;
     position: relative;
     overflow: hidden;
+    height: 48px;
 
     &:hover {
         transform: translateY(-1px);
-        box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2);
+        box-shadow: 0 6px 16px rgba(239, 68, 68, 0.2);
     }
 
     &:active {
@@ -503,55 +572,81 @@ export const Board: React.FC<BoardProps> = ({ game, currentPlayerId, onCellClick
     return (
         <BoardContainer>
             <GameInfo>
-                <PlayerInfo>
+                <TopBar>
                     <RoomTitle>Phòng: {game.roomName}</RoomTitle>
-                    <PlayerStatus 
+                    <ExitButton onClick={handleExit} disabled={isExiting}>
+                        {isExiting ? (
+                            <>
+                                <span className="car-container">
+                                    <div className="car">
+                                        <div className="car-body">
+                                            <div className="wheel front"></div>
+                                            <div className="wheel back"></div>
+                                        </div>
+                                        <div className="flame"></div>
+                                        <div className="smoke"></div>
+                                        <div className="wind-line"></div>
+                                        <div className="wind-line"></div>
+                                        <div className="wind-line"></div>
+                                    </div>
+                                </span>
+                                <span style={{ opacity: 0 }}>
+                                    {game.status === "Finished" ? 'Đang tải lại...' : 'Đang thoát...'}
+                                </span>
+                            </>
+                        ) : (
+                            <span className="exit-text">
+                                {game.status === "Finished" ? 'Chơi lại' : 'Thoát phòng'}
+                            </span>
+                        )}
+                    </ExitButton>
+                </TopBar>
+                <PlayersContainer>
+                    <PlayerCard 
                         isCurrentPlayer={isPlayer1} 
                         isWinner={game.winner === game.player1Id}
                     >
-                        Người chơi 1 (X): {game.player1Name} {isPlayer1 ? '(Bạn)' : ''}
-                    </PlayerStatus>
-                    <PlayerStatus 
+                        <PlayerSymbol isX={true}>X</PlayerSymbol>
+                        <PlayerLabel isActive={isPlayer1 || game.winner === game.player1Id}>
+                            Người chơi 1
+                        </PlayerLabel>
+                        <PlayerName isActive={isPlayer1 || game.winner === game.player1Id}>
+                            {game.player1Name} {isPlayer1 && '(Bạn)'}
+                        </PlayerName>
+                        {game.status === "InProgress" && isPlayer1 && (
+                            <PlayerStatus isActive={true}>
+                                {isMyTurn ? <><span className="controller">🎮</span> Đến lượt bạn</> : <><span className="waiting">⌛</span> Chờ đối thủ</>}
+                            </PlayerStatus>
+                        )}
+                    </PlayerCard>
+
+                    <PlayerCard 
                         isCurrentPlayer={!isPlayer1} 
                         isWinner={game.winner === game.player2Id}
                     >
-                        Người chơi 2 (O): {game.player2Name 
-                            ? `${game.player2Name}${!isPlayer1 ? ' (Bạn)' : ''}`
-                            : <span><span className="waiting">⌛</span> Đang chờ người chơi...</span>
-                        }
-                    </PlayerStatus>
-                    {game.status === "InProgress" && (
-                        <TurnIndicator isMyTurn={isMyTurn}>
-                            {isMyTurn ? '🎮 Đến lượt bạn' : <span><span className="hourglass">⌛</span> Đợi đối thủ</span>}
-                        </TurnIndicator>
-                    )}
-                </PlayerInfo>
-                <ExitButton onClick={handleExit} disabled={isExiting}>
-                    {isExiting ? (
-                        <>
-                            <span className="car-container">
-                                <div className="car">
-                                    <div className="car-body">
-                                        <div className="wheel front"></div>
-                                        <div className="wheel back"></div>
-                                    </div>
-                                    <div className="flame"></div>
-                                    <div className="smoke"></div>
-                                    <div className="wind-line"></div>
-                                    <div className="wind-line"></div>
-                                    <div className="wind-line"></div>
-                                </div>
-                            </span>
-                            <span style={{ opacity: 0 }}>
-                                {game.status === "Finished" ? 'Đang tải lại...' : 'Đang thoát...'}
-                            </span>
-                        </>
-                    ) : (
-                        <span className="exit-text">
-                            {game.status === "Finished" ? 'Chơi lại' : 'Thoát phòng'}
-                        </span>
-                    )}
-                </ExitButton>
+                        <PlayerSymbol isX={false}>O</PlayerSymbol>
+                        <PlayerLabel isActive={!isPlayer1 || game.winner === game.player2Id}>
+                            Người chơi 2
+                        </PlayerLabel>
+                        {game.player2Name ? (
+                            <>
+                                <PlayerName isActive={!isPlayer1 || game.winner === game.player2Id}>
+                                    {game.player2Name} {!isPlayer1 && '(Bạn)'}
+                                </PlayerName>
+                                {game.status === "InProgress" && !isPlayer1 && (
+                                    <PlayerStatus isActive={true}>
+                                        {isMyTurn ? <><span className="controller">🎮</span> Đến lượt bạn</> : <><span className="waiting">⌛</span> Chờ đối thủ</>}
+                                    </PlayerStatus>
+                                )}
+                            </>
+                        ) : (
+                            <PlayerStatus>
+                                <span className="waiting">⌛</span> 
+                                Đang chờ người chơi...
+                            </PlayerStatus>
+                        )}
+                    </PlayerCard>
+                </PlayersContainer>
             </GameInfo>
             <Grid>
                 {Array(225).fill(null).map((_, index) => renderCell(index))}

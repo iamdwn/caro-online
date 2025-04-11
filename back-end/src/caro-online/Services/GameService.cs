@@ -149,6 +149,7 @@ namespace caro_online.Services
         public async Task DeleteRoom(string roomName)
         {
             if (_games.TryGetValue(roomName, out var game))
+            if (_games.TryGetValue(roomName, out var game))
             {
                 if (game.Status == "InProgress")
                 {
@@ -160,7 +161,18 @@ namespace caro_online.Services
                 }
                 
                 _games.TryRemove(roomName, out _);
+                if (game.Status == "InProgress")
+                {
+                    game.Status = "Finished";
+                    game.Winner = game.Player2Id;
+                    game.EndedAt = DateTime.UtcNow;
+                    AddFinishedGame(game);
+                    await _hubContext.Clients.All.SendAsync("GameUpdated", game);
+                }
+                
+                _games.TryRemove(roomName, out _);
                 await _hubContext.Clients.All.SendAsync("GameDeleted", roomName);
+                await BroadcastAvailableRooms();
                 await BroadcastAvailableRooms();
             }
         }
@@ -176,7 +188,33 @@ namespace caro_online.Services
                 }
 
                 if (game.Status == "InProgress")
+        public async Task LeaveRoom(string roomName, string userId)
+        {
+            Game game;
+            lock (_lock)
+            {
+                if (!_games.TryGetValue(roomName, out game))
                 {
+                    throw new Exception("Không tìm thấy phòng");
+                }
+
+                if (game.Status == "InProgress")
+                {
+                    if (game.Player1Id == userId)
+                    {
+                        game.Status = "Finished";
+                        game.Winner = game.Player2Id;
+                        game.EndedAt = DateTime.UtcNow;
+                    }
+                    else if (game.Player2Id == userId)
+                    {
+                        game.Status = "Finished";
+                        game.Winner = game.Player1Id;
+                        game.EndedAt = DateTime.UtcNow;
+                    }
+
+                    AddFinishedGame(game);
+                    _hubContext.Clients.All.SendAsync("GameUpdated", game);
                     if (game.Player1Id == userId)
                     {
                         game.Status = "Finished";
@@ -207,8 +245,21 @@ namespace caro_online.Services
                     {
                         _games.TryRemove(roomName, out _);
                     }
+                    if (game.Player2Id == userId)
+                    {
+                        game.Player2Id = null;
+                        game.Player2Name = null;
+                        game.Status = "Waiting";
+                        _games.TryUpdate(roomName, game, game);
+                    }
+                    else if (game.Player1Id == userId)
+                    {
+                        _games.TryRemove(roomName, out _);
+                    }
                 }
             }
+
+            await BroadcastAvailableRooms();
 
             await BroadcastAvailableRooms();
         }
@@ -334,6 +385,9 @@ namespace caro_online.Services
                 Board = game.Board.ToArray(),
                 CurrentTurn = game.CurrentTurn,
                 CreatedAt = game.CreatedAt,
+                EndedAt = DateTime.UtcNow,
+                Player1PlayAgain = false,
+                Player2PlayAgain = false
                 EndedAt = DateTime.UtcNow,
                 Player1PlayAgain = false,
                 Player2PlayAgain = false

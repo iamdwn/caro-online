@@ -28,7 +28,7 @@ class GameService {
 
         this.connection = new HubConnectionBuilder()
             // .withUrl('https://caro-be.iamdwn.dev/gameHub')
-            .withUrl('http://localhost:5071/gameHub')
+            .withUrl(apiUrl)
             .withAutomaticReconnect([0, 1000, 2000, 5000])
             .configureLogging(LogLevel.Warning)
             .build();
@@ -212,6 +212,12 @@ class GameService {
     offGameFinished(callback: (game: Game) => void) {
         if (!this.connection) return;
         this.connection.off('GameFinished', callback);
+    }
+
+    public showError(message: string) {
+        if (this.errorCallback) {
+            this.errorCallback(message);
+        }
     }
 }
 

@@ -26,8 +26,8 @@ class GameService {
         }
 
         this.connection = new HubConnectionBuilder()
-            // .withUrl('https://caro-be.iamdwn.dev/gameHub')
-            .withUrl('http://localhost:5071/gameHub')
+            .withUrl('https://www.caro-be.iamdwn.dev/gameHub')
+            // .withUrl('http://localhost:5071/gameHub')
             .withAutomaticReconnect([0, 1000, 2000, 5000])
             .configureLogging(LogLevel.Warning)
             .build();

@@ -1,12 +1,10 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.OpenApi.Models;
 using caro_online.Hubs;
 using caro_online.Services;
 
 var builder = WebApplication.CreateBuilder(args);
-
 builder.Services.AddControllers();
-
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
@@ -15,12 +13,14 @@ builder.Services.AddSwaggerGen(c =>
 
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowSpecificOrigins", policy =>
+    options.AddDefaultPolicy(builder =>
     {
-        policy.WithOrigins("https://caro.iamdwn.dev")
-              .AllowAnyMethod()
-              .AllowAnyHeader()
-              .AllowCredentials();
+        builder.WithOrigins("http://localhost:3002")
+               .WithOrigins("https://caro.iamdwn.dev")
+               .AllowAnyMethod()
+               .AllowAnyHeader()
+               .AllowCredentials()
+               .SetIsOriginAllowed(origin => true);
     });
 });
 
@@ -30,27 +30,32 @@ builder.Services.AddScoped<IGameService, GameService>();
 
 var app = builder.Build();
 
-app.UseSwagger();
-app.UseSwaggerUI();
-app.UseCors("AllowSpecificOrigins");
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
+
+app.UseCors();
+
 app.UseRouting();
+
+app.UseExceptionHandler(errorApp =>
+{
+    errorApp.Run(async context =>
+    {
+        context.Response.StatusCode = 500;
+        context.Response.ContentType = "application/json";
+        var error = context.Features.Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerFeature>();
+        if (error != null)
+        {
+            await context.Response.WriteAsJsonAsync(new { error = error.Error.Message });
+        }
+    });
+});
+
 app.MapHub<GameHub>("/gameHub");
+
 app.MapControllers();
 
-
-//app.UseExceptionHandler(errorApp =>
-//{
-//    errorApp.Run(async context =>
-//    {
-//        context.Response.StatusCode = 500;
-//        context.Response.ContentType = "application/json";
-//        var error = context.Features.Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerFeature>();
-//        if (error != null)
-//        {
-//            await context.Response.WriteAsJsonAsync(new { error = error.Error.Message });
-//        }
-//    });
-//});
-
 app.Run();
-

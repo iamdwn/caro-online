@@ -21,7 +21,7 @@ namespace caro_online.Hubs
         {
             await base.OnConnectedAsync();
             await Clients.Caller.SendAsync("connected", Context.ConnectionId);
-            
+
             var rooms = await _gameService.GetAvailableRooms();
             await Clients.Caller.SendAsync("availableRooms", rooms);
         }
@@ -37,7 +37,7 @@ namespace caro_online.Hubs
             {
                 var game = await _gameService.CreateGame(playerName, roomName);
                 await Clients.All.SendAsync("gameCreated", game);
-                
+
                 var rooms = await _gameService.GetAvailableRooms();
                 await Clients.All.SendAsync("availableRooms", rooms);
 
@@ -56,7 +56,7 @@ namespace caro_online.Hubs
             {
                 var game = await _gameService.JoinGame(roomName, playerName);
                 await Clients.All.SendAsync("gameJoined", game);
-                
+
                 var rooms = await _gameService.GetAvailableRooms();
                 await Clients.All.SendAsync("availableRooms", rooms);
 
@@ -128,4 +128,4 @@ namespace caro_online.Hubs
             return _gameService.GetFinishedGames();
         }
     }
-} 
+}

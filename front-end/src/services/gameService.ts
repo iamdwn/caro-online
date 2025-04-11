@@ -18,12 +18,22 @@ class GameService {
     private async setupConnection() {
         if (this.connection) return;
 
-        // Setup SignalR connection
+        const apiUrl = process.env.REACT_APP_API_BASE_URL;
+
+        if (!apiUrl) {
+            console.error('API Base URL not defined');
+            return;
+        }
+
         this.connection = new HubConnectionBuilder()
-            .withUrl(`https://caro-be.iamdwn.dev/gameHub`)
+            .withUrl(apiUrl)
             .withAutomaticReconnect([0, 1000, 2000, 5000])
             .configureLogging(LogLevel.Warning)
             .build();
+
+        this.connection.on('connected', () => {
+            console.log('Connected event received from server');
+        });     
 
         this.connection.on('gameCreated', (game: Game) => {
             if (this.gameCreatedCallback) {
@@ -55,9 +65,7 @@ class GameService {
             }
         });
 
-        // Log connection events for debugging
-        this.connection.onclose((error) => {
-            console.error('Connection closed:', error);
+        this.connection.onclose(() => {
             this.connectionPromise = null;
         });
 
@@ -66,7 +74,6 @@ class GameService {
         });
 
         this.connection.onreconnected(() => {
-            console.log('Reconnected');
             this.getAvailableRooms();
         });
     }
@@ -75,19 +82,22 @@ class GameService {
         if (!this.connection) {
             await this.setupConnection();
         }
-    
-        if (this.connection && this.connection.state === HubConnectionState.Disconnected && !this.connectionPromise) {
+
+        if (this.connection?.state === HubConnectionState.Disconnected) {
             this.connectionPromise = this.connection.start();
         }
-    
+
+        if (!this.connectionPromise) {
+            this.connectionPromise = this.connection!.start();
+        }
+
         try {
             await this.connectionPromise;
         } catch (error) {
             this.connectionPromise = null;
-            console.error('Failed to establish connection:', error);
             throw error;
         }
-    }    
+    }
 
     public onError(callback: (message: string) => void) {
         this.errorCallback = callback;
@@ -148,13 +158,8 @@ class GameService {
     }
 
     public async getAvailableRooms() {
-        try {
-            await this.ensureConnection();
-            return await this.connection!.invoke('GetAvailableRooms');
-        } catch (error) {
-            console.error('Get available rooms error:', error);
-            throw error;
-        }
+        await this.ensureConnection();
+        return await this.connection!.invoke('GetAvailableRooms');
     }
 
     public async makeMove(gameId: string, playerId: string, row: number, col: number) {
@@ -168,35 +173,24 @@ class GameService {
     }
 
     public async deleteRoom(roomName: string): Promise<void> {
-        try {
-            await this.connection!.invoke('DeleteRoom', roomName);
-        } catch (error) {
-            console.error('Delete room error:', error);
-            throw error;
-        }
+        await this.connection!.invoke('DeleteRoom', roomName);
     }
 
     public async leaveRoom(roomName: string, playerName: string): Promise<void> {
-        try {
-            await this.connection!.invoke('LeaveRoom', roomName, playerName);
-        } catch (error) {
-            console.error('Leave room error:', error);
-            throw error;
-        }
+        await this.connection!.invoke('LeaveRoom', roomName, playerName);
     }
 
     public onGameDeleted(callback: (roomName: string) => void) {
-        if (!this.connection) return;
-        this.connection.on('GameDeleted', callback);
+        this.connection!.on('GameDeleted', callback);
     }
 
     public onPlayerLeft(callback: (game: Game) => void) {
-        if (!this.connection) return;
-        this.connection.on('PlayerLeft', callback);
+        this.connection!.on('PlayerLeft', callback);
     }
 
     async getFinishedGames(): Promise<Game[]> {
         try {
+            await this.ensureConnection();
             if (!this.connection) {
                 throw new Error('Connection is not initialized');
             }
@@ -204,7 +198,7 @@ class GameService {
             return response;
         } catch (error) {
             console.error('Error getting finished games:', error);
-            throw error;  // Propagate error so the caller is aware
+            return [];
         }
     }
 
@@ -219,4 +213,4 @@ class GameService {
     }
 }
 
-export const gameService = new GameService();
+export const gameService = new GameService(); 

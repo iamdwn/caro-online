@@ -1,9 +1,9 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.OpenApi.Models;
-using caro_online.Hubs;
+﻿using caro_online.Hubs;
 using caro_online.Services;
+using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
+
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
@@ -13,18 +13,16 @@ builder.Services.AddSwaggerGen(c =>
 
 builder.Services.AddCors(options =>
 {
-    options.AddDefaultPolicy(builder =>
+    options.AddPolicy("AllowFrontend", policy =>
     {
-        builder.WithOrigins("http://localhost:3002", "https://caro.iamdwn.dev")
-               .AllowAnyMethod()
-               .AllowAnyHeader()
-               .AllowCredentials()
-               .SetIsOriginAllowed(origin => true);
+        policy.WithOrigins("http://localhost:3002", "https://caro.iamdwn.dev")
+              .AllowAnyMethod()
+              .AllowAnyHeader()
+              .AllowCredentials();
     });
 });
 
 builder.Services.AddSignalR();
-
 builder.Services.AddScoped<IGameService, GameService>();
 
 var app = builder.Build();
@@ -32,7 +30,7 @@ var app = builder.Build();
 app.UseSwagger();
 app.UseSwaggerUI();
 
-app.UseCors();
+app.UseCors("AllowFrontend");
 
 app.UseRouting();
 
@@ -51,7 +49,6 @@ app.UseExceptionHandler(errorApp =>
 });
 
 app.MapHub<GameHub>("/gameHub");
-
 app.MapControllers();
 
 app.Run();

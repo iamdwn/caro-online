@@ -10,22 +10,23 @@ services:
     container_name: caro_backend
     networks:
       - caro_network
+    environment:
+      - ASPNETCORE_URLS=http://+:8080
 
   frontend: 
     build:
       context: ./front-end
       dockerfile: Dockerfile
-      args:
-        REACT_APP_API_BASE_URL: https://caro-be.iamdwn.dev/gameHub
     ports:
       - "3000:80"
-    environment:
-      - REACT_APP_API_BASE_URL=https://caro-be.iamdwn.dev/gameHub
     container_name: caro_frontend
     depends_on:
       - backend
+    environment:
+      - REACT_APP_API_BASE_URL=https://caro-be.iamdwn.dev/gameHub 
     networks:
       - caro_network
+
 networks:
   caro_network:
     driver: bridge

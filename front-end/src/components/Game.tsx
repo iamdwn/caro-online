@@ -42,10 +42,12 @@ const RoomListContainer = styled.div`
     display: flex;
     gap: 20px;
     margin-top: 20px;
+    flex-wrap: wrap;
 `;
 
 const RoomList = styled.div`
     flex: 1;
+    min-width: 300px;
     background: #fff;
     padding: 20px;
     border-radius: 8px;
@@ -123,6 +125,74 @@ const FinishedGameInfo = styled.div`
     }
 `;
 
+const Modal = styled.div`
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+`;
+
+const ModalContent = styled.div`
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    max-width: 600px;
+    width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
+    position: relative;
+`;
+
+const CloseButton = styled.button`
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: #666;
+    
+    &:hover {
+        color: #000;
+    }
+`;
+
+const GameReplayInfo = styled.div`
+    margin-bottom: 20px;
+    padding: 15px;
+    background-color: #f5f5f5;
+    border-radius: 5px;
+`;
+
+const GameGrid = styled.div`
+    display: grid;
+    grid-template-columns: repeat(15, 30px);
+    gap: 1px;
+    background-color: #ddd;
+    padding: 1px;
+    border: 1px solid #999;
+    margin: 20px auto;
+`;
+
+const GameCell = styled.div<{ value: number }>`
+    width: 30px;
+    height: 30px;
+    background-color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    border: 1px solid #ddd;
+    color: ${props => props.value === 1 ? '#e74c3c' : props.value === 2 ? '#3498db' : 'transparent'};
+`;
+
 export const Game: React.FC = () => {
     const [tabId] = useState(() => Math.random().toString(36).substring(7));
     const [userId] = useState(() => localStorage.getItem('userId') || Math.random().toString(36).substring(7));
@@ -141,6 +211,7 @@ export const Game: React.FC = () => {
     const [isCreating, setIsCreating] = useState(false);
     const [isJoining, setIsJoining] = useState(false);
     const [isMakingMove, setIsMakingMove] = useState(false);
+    const [selectedGame, setSelectedGame] = useState<GameType | null>(null);
 
     useEffect(() => {
         localStorage.setItem('userId', userId);
@@ -389,6 +460,10 @@ export const Game: React.FC = () => {
         }
     };
 
+    const handleViewGameHistory = (game: GameType) => {
+        setSelectedGame(game);
+    };
+
     if (currentGame) {
         return (
             <Board 
@@ -402,92 +477,121 @@ export const Game: React.FC = () => {
 
     return (
         <GameContainer>
-            <JoinGameForm>
-                <h2>Tham gia game</h2>
-                <div>
-                    <Input
-                        type="text"
-                        placeholder="Tên người chơi"
-                        value={playerName}
-                        onChange={(e) => setPlayerName(e.target.value)}
-                        disabled={isCreating || isJoining}
-                    />
-                </div>
-                <div style={{ marginTop: '10px' }}>
-                    <Input
-                        type="text"
-                        placeholder="Tên phòng"
-                        value={roomName}
-                        onChange={(e) => setRoomName(e.target.value)}
-                        disabled={isCreating || isJoining}
-                    />
-                </div>
-                <div style={{ marginTop: '10px', display: 'flex', gap: '10px' }}>
-                    <Button 
-                        onClick={handleCreateGame} 
-                        disabled={isCreating || isJoining}
-                    >
-                        {isCreating ? 'Đang tạo phòng...' : 'Tạo phòng mới'}
-                    </Button>
-                </div>
-            </JoinGameForm>
+            {!currentGame && (
+                <>
+                    <JoinGameForm>
+                        <Input
+                            type="text"
+                            placeholder="Nhập tên của bạn"
+                            value={playerName}
+                            onChange={(e) => setPlayerName(e.target.value)}
+                        />
+                        <Input
+                            type="text"
+                            placeholder="Nhập tên phòng"
+                            value={roomName}
+                            onChange={(e) => setRoomName(e.target.value)}
+                        />
+                        <Button onClick={handleCreateGame} disabled={isCreating}>
+                            {isCreating ? 'Đang tạo...' : 'Tạo phòng'}
+                        </Button>
+                    </JoinGameForm>
 
-            <RoomListContainer>
-                <RoomList>
-                    <RoomListTitle>
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <path d="M15 12H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        Danh sách phòng đang chờ ({availableRooms.length})
-                    </RoomListTitle>
-                    {availableRooms.length === 0 ? (
-                        <div>Không có phòng nào đang chờ</div>
-                    ) : (
-                        availableRooms.map(room => (
-                            <RoomItem key={room.id}>
-                                <RoomInfo>
-                                    <RoomName>Tên phòng: {room.roomName}</RoomName>
-                                    <PlayerName>Người tạo: {room.player1Name}</PlayerName>
-                                </RoomInfo>
-                                <JoinButton 
-                                    onClick={() => handleJoinGame(room.roomName)}
-                                    disabled={isJoining}
+                    <RoomListContainer>
+                        <RoomList>
+                            <RoomListTitle>
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2zm-7-3.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z"/>
+                                </svg>
+                                Phòng có sẵn ({availableRooms.length})
+                            </RoomListTitle>
+                            {availableRooms.map((room) => (
+                                <RoomItem key={room.id}>
+                                    <RoomInfo>
+                                        <RoomName>{room.roomName}</RoomName>
+                                        <PlayerName>Chủ phòng: {room.player1Name}</PlayerName>
+                                    </RoomInfo>
+                                    <JoinButton onClick={() => handleJoinGame(room.roomName)} disabled={isJoining}>
+                                        {isJoining ? 'Đang vào...' : 'Vào phòng'}
+                                    </JoinButton>
+                                </RoomItem>
+                            ))}
+                            {availableRooms.length === 0 && (
+                                <div style={{ textAlign: 'center', color: '#666' }}>
+                                    Không có phòng nào
+                                </div>
+                            )}
+                        </RoomList>
+
+                        <RoomList>
+                            <RoomListTitle>
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/>
+                                </svg>
+                                Lịch sử trận đấu ({finishedGames.length})
+                            </RoomListTitle>
+                            {finishedGames.map((game) => (
+                                <RoomItem 
+                                    key={game.id} 
+                                    onClick={() => handleViewGameHistory(game)}
+                                    style={{ cursor: 'pointer' }}
                                 >
-                                    {isJoining ? 'Đang tham gia...' : 'Tham gia'}
-                                </JoinButton>
-                            </RoomItem>
-                        ))
-                    )}
-                </RoomList>
+                                    <RoomInfo>
+                                        <RoomName>{game.roomName}</RoomName>
+                                        <PlayerName>
+                                            {game.player1Name} vs {game.player2Name}
+                                        </PlayerName>
+                                        <FinishedGameInfo>
+                                            Người thắng: <span className="winner">
+                                                {game.winner === game.player1Id ? game.player1Name : game.player2Name}
+                                            </span>
+                                        </FinishedGameInfo>
+                                    </RoomInfo>
+                                </RoomItem>
+                            ))}
+                            {finishedGames.length === 0 && (
+                                <div style={{ textAlign: 'center', color: '#666' }}>
+                                    Chưa có trận đấu nào kết thúc
+                                </div>
+                            )}
+                        </RoomList>
+                    </RoomListContainer>
+                </>
+            )}
 
-                <RoomList>
-                    <RoomListTitle>
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        Trận đấu đã kết thúc ({finishedGames.length})
-                    </RoomListTitle>
-                    {finishedGames.length === 0 ? (
-                        <div>Chưa có trận đấu nào kết thúc</div>
-                    ) : (
-                        finishedGames.map(game => (
-                            <RoomItem key={game.id}>
-                                <RoomInfo>
-                                    <RoomName>Tên phòng: {game.roomName}</RoomName>
-                                    <FinishedGameInfo>
-                                        {game.player1Name} vs {game.player2Name}
-                                    </FinishedGameInfo>
-                                    <FinishedGameInfo>
-                                        Người thắng: <span className="winner">
-                                            {game.winner === game.player1Id ? game.player1Name : game.player2Name}
-                                        </span>
-                                    </FinishedGameInfo>
-                                </RoomInfo>
-                            </RoomItem>
-                        ))
-                    )}
-                </RoomList>
-            </RoomListContainer>
+            {currentGame && (
+                <Board
+                    game={currentGame}
+                    currentPlayerId={currentPlayerId ?? undefined}
+                    onCellClick={handleCellClick}
+                    onExitRoom={handleExitRoom}
+                />
+            )}
+
+            {selectedGame && (
+                <Modal onClick={() => setSelectedGame(null)}>
+                    <ModalContent onClick={e => e.stopPropagation()}>
+                        <CloseButton onClick={() => setSelectedGame(null)}>&times;</CloseButton>
+                        <GameReplayInfo>
+                            <h3>Chi tiết trận đấu</h3>
+                            <div>Phòng: {selectedGame.roomName}</div>
+                            <div>Người chơi 1 (X): {selectedGame.player1Name}</div>
+                            <div>Người chơi 2 (O): {selectedGame.player2Name}</div>
+                            <div>Người thắng: <span style={{ color: '#27ae60', fontWeight: 'bold' }}>
+                                {selectedGame.winner === selectedGame.player1Id ? selectedGame.player1Name : selectedGame.player2Name}
+                            </span></div>
+                            <div>Thời gian: {new Date(selectedGame.createdAt).toLocaleString()}</div>
+                        </GameReplayInfo>
+                        <GameGrid>
+                            {selectedGame.board?.map((value, index) => (
+                                <GameCell key={index} value={value}>
+                                    {value === 1 ? 'X' : value === 2 ? 'O' : ''}
+                                </GameCell>
+                            ))}
+                        </GameGrid>
+                    </ModalContent>
+                </Modal>
+            )}
         </GameContainer>
     );
 }; 

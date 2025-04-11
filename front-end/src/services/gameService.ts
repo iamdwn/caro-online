@@ -139,22 +139,22 @@ class GameService {
         this.availableRoomsCallback = callback;
     }
 
-    public async createGame(playerName: string, roomName: string) {
+    public async createGame(playerName: string, roomName: string, userId: string): Promise<Game> {
+        await this.ensureConnection();
         try {
-            await this.ensureConnection();
-            return await this.connection!.invoke('CreateGame', playerName, roomName);
+            return await this.connection!.invoke('CreateGame', playerName, roomName, userId);
         } catch (error) {
-            console.error('Create game error:', error);
+            console.error('Error creating game:', error);
             throw error;
         }
     }
 
-    public async joinGame(roomName: string, playerName: string) {
+    public async joinGame(roomName: string, playerName: string, userId: string): Promise<Game> {
+        await this.ensureConnection();
         try {
-            await this.ensureConnection();
-            return await this.connection!.invoke('JoinGame', roomName, playerName);
+            return await this.connection!.invoke('JoinGame', roomName, playerName, userId);
         } catch (error) {
-            console.error('Join game error:', error);
+            console.error('Error joining game:', error);
             throw error;
         }
     }

@@ -38,7 +38,7 @@ namespace caro_online.Services
             }
         }
 
-        public async Task<Game> CreateGame(string playerName, string roomName)
+        public async Task<Game> CreateGame(string playerName, string roomName, string userId)
         {
             if (string.IsNullOrEmpty(playerName) || string.IsNullOrEmpty(roomName))
             {
@@ -50,7 +50,7 @@ namespace caro_online.Services
             {
                 if (_games.TryGetValue(roomName, out var existingGame))
                 {
-                    if (existingGame.Player1Name == playerName)
+                    if (existingGame.Player1Name == playerName && existingGame.Player1Id == userId)
                     {
                         existingGame.Status = "Waiting";
                         _games.TryUpdate(roomName, existingGame, existingGame);
@@ -66,7 +66,7 @@ namespace caro_online.Services
                 {
                     Id = Guid.NewGuid().ToString(),
                     RoomName = roomName,
-                    Player1Id = Guid.NewGuid().ToString(),
+                    Player1Id = userId,
                     Player1Name = playerName,
                     Status = "Waiting",
                     Board = new int[225],
@@ -85,7 +85,7 @@ namespace caro_online.Services
             return game;
         }
 
-        public async Task<Game> JoinGame(string roomName, string playerName)
+        public async Task<Game> JoinGame(string roomName, string playerName, string userId)
         {
             if (string.IsNullOrEmpty(playerName) || string.IsNullOrEmpty(roomName))
             {
@@ -100,12 +100,12 @@ namespace caro_online.Services
                     throw new Exception("Không tìm thấy phòng");
                 }
 
-                if (game.Player1Name == playerName)
+                if (game.Player1Name == playerName && game.Player1Id == userId)
                 {
                     LogGameInfo("ReconnectGame", game);
                     return game;
                 }
-                else if (game.Player2Name == playerName)
+                else if (game.Player2Name == playerName && game.Player2Id == userId)
                 {
                     LogGameInfo("ReconnectGame", game);
                     return game;
@@ -116,7 +116,7 @@ namespace caro_online.Services
                     throw new Exception("Phòng không còn nhận người chơi mới");
                 }
 
-                game.Player2Id = Guid.NewGuid().ToString();
+                game.Player2Id = userId;
                 game.Player2Name = playerName;
                 game.Status = "InProgress";
                 game.CurrentTurn = game.Player1Id;
@@ -292,7 +292,6 @@ namespace caro_online.Services
 
         public void AddFinishedGame(Game game)
         {
-            // Tạo bản sao của game để tránh tham chiếu
             var finishedGame = new Game
             {
                 Id = game.Id,

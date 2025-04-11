@@ -125,6 +125,7 @@ const FinishedGameInfo = styled.div`
 
 export const Game: React.FC = () => {
     const [tabId] = useState(() => Math.random().toString(36).substring(7));
+    const [userId] = useState(() => localStorage.getItem('userId') || Math.random().toString(36).substring(7));
     const [playerName, setPlayerName] = useState(() => localStorage.getItem('playerName') || '');
     const [roomName, setRoomName] = useState('');
     const [availableRooms, setAvailableRooms] = useState<GameType[]>([]);
@@ -140,6 +141,10 @@ export const Game: React.FC = () => {
     const [isCreating, setIsCreating] = useState(false);
     const [isJoining, setIsJoining] = useState(false);
     const [isMakingMove, setIsMakingMove] = useState(false);
+
+    useEffect(() => {
+        localStorage.setItem('userId', userId);
+    }, [userId]);
 
     useEffect(() => {
         if (playerName) {
@@ -172,13 +177,13 @@ export const Game: React.FC = () => {
                 const game = JSON.parse(savedGame);
                 try {
                     if (game.player1Name === playerName) {
-                        const reconnectedGame = await gameService.createGame(playerName, game.roomName);
+                        const reconnectedGame = await gameService.createGame(playerName, game.roomName, userId);
                         setCurrentGame(reconnectedGame);
-                        setCurrentPlayerId(reconnectedGame.player1Id);
+                        setCurrentPlayerId(reconnectedGame.player1Id ?? null);
                     } else {
-                        const reconnectedGame = await gameService.joinGame(game.roomName, playerName);
+                        const reconnectedGame = await gameService.joinGame(game.roomName, playerName, userId);
                         setCurrentGame(reconnectedGame);
-                        setCurrentPlayerId(reconnectedGame.player2Id);
+                        setCurrentPlayerId(reconnectedGame.player2Id ?? null);
                     }
                 } catch (error) {
                     console.error('Reconnect error:', error);
@@ -193,7 +198,8 @@ export const Game: React.FC = () => {
                 const rooms = await gameService.getAvailableRooms();
                 if (Array.isArray(rooms)) {
                     const availableRooms = rooms.filter(room => 
-                        room.status === "Waiting" && room.player1Name !== playerName
+                        room.status === "Waiting" && 
+                        (room.player1Name !== playerName || (room.player1Name === playerName && room.player1Id !== userId))
                     );
                     console.log('Rooms after reconnect:', availableRooms);
                     setAvailableRooms(availableRooms);
@@ -219,7 +225,7 @@ export const Game: React.FC = () => {
 
                 gameService.onGameCreated((game: GameType) => {
                     if (mounted) {
-                        if (game.player1Name === playerName) {
+                        if (game.player1Name === playerName && game.player1Id === userId) {
                             setCurrentGame(game);
                             setCurrentPlayerId(game.player1Id);
                             localStorage.setItem(`currentGame_${tabId}`, JSON.stringify(game));
@@ -231,9 +237,12 @@ export const Game: React.FC = () => {
 
                 gameService.onGameJoined((game: GameType) => {
                     if (mounted && game) {
-                        if (game.player1Name === playerName || game.player2Name === playerName) {
+                        const isPlayer1 = game.player1Name === playerName && game.player1Id === userId;
+                        const isPlayer2 = game.player2Name === playerName && game.player2Id === userId;
+                        
+                        if (isPlayer1 || isPlayer2) {
                             setCurrentGame(game);
-                            const playerId = game.player2Name === playerName ? game.player2Id : game.player1Id;
+                            const playerId = isPlayer2 ? game.player2Id : game.player1Id;
                             setCurrentPlayerId(playerId || null);
                             localStorage.setItem(`currentGame_${tabId}`, JSON.stringify(game));
                             if (playerId) {
@@ -254,7 +263,8 @@ export const Game: React.FC = () => {
                 gameService.onAvailableRooms((rooms: GameType[]) => {
                     if (mounted && Array.isArray(rooms)) {
                         const availableRooms = rooms.filter(room => 
-                            room.status === "Waiting" && room.player1Name !== playerName
+                            room.status === "Waiting" && 
+                            (room.player1Name !== playerName || (room.player1Name === playerName && room.player1Id !== userId))
                         );
                         setAvailableRooms(availableRooms);
                     }
@@ -278,7 +288,8 @@ export const Game: React.FC = () => {
                 if (mounted) {
                     if (Array.isArray(initialRooms)) {
                         const availableRooms = initialRooms.filter(room => 
-                            room.status === "Waiting" && room.player1Name !== playerName
+                            room.status === "Waiting" && 
+                            (room.player1Name !== playerName || (room.player1Name === playerName && room.player1Id !== userId))
                         );
                         setAvailableRooms(availableRooms);
                     }
@@ -315,7 +326,7 @@ export const Game: React.FC = () => {
 
         try {
             setIsCreating(true);
-            await gameService.createGame(playerName, roomName);
+            await gameService.createGame(playerName, roomName, userId);
             setRoomName('');
         } catch (error) {
             console.error('Create game error:', error);
@@ -331,7 +342,7 @@ export const Game: React.FC = () => {
         }
         try {
             setIsJoining(true);
-            await gameService.joinGame(roomName, playerName);
+            await gameService.joinGame(roomName, playerName, userId);
         } catch (error) {
             console.error('Join game error:', error);
             alert('Không thể tham gia game');

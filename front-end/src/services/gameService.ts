@@ -19,7 +19,8 @@ class GameService {
         if (this.connection) return;
 
         // const apiUrl = process.env.REACT_APP_API_BASE_URL;
-        const apiUrl = 'https://caro-be.iamdwn.dev';
+        // const apiUrl = 'https://caro-be.iamdwn.dev';
+        const apiUrl = 'http://localhost:5071';
 
         if (!apiUrl) {
             console.error('API Base URL not defined');
@@ -28,7 +29,7 @@ class GameService {
 
         this.connection = new HubConnectionBuilder()
             // .withUrl('https://caro-be.iamdwn.dev/gameHub')
-            .withUrl(apiUrl)
+            .withUrl(apiUrl + '/gameHub')
             .withAutomaticReconnect([0, 1000, 2000, 5000])
             .configureLogging(LogLevel.Warning)
             .build();

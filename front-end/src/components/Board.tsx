@@ -46,7 +46,7 @@ const Grid = styled.div`
     border: 1px solid #999;
 `;
 
-const Cell = styled.div<{ isWinningCell?: boolean }>`
+const Cell = styled.div<{ $isWinningCell?: boolean }>`
     width: 40px;
     height: 40px;
     background-color: white;
@@ -56,13 +56,13 @@ const Cell = styled.div<{ isWinningCell?: boolean }>`
     font-size: 24px;
     cursor: pointer;
     border: 1px solid #ddd;
-    ${props => props.isWinningCell && `
+    ${props => props.$isWinningCell && `
         background-color: #2ecc71;
         color: white;
     `}
 
     &:hover {
-        background-color: ${props => props.isWinningCell ? '#2ecc71' : '#f0f0f0'};
+        background-color: ${props => props.$isWinningCell ? '#2ecc71' : '#f0f0f0'};
     }
 `;
 
@@ -98,16 +98,16 @@ const WinnerContent = styled.div`
     }
 `;
 
-const WinnerTitle = styled.h2<{ isWinner: boolean }>`
-    color: ${props => props.isWinner ? '#2ecc71' : '#e74c3c'};
+const WinnerTitle = styled.h2<{ $isWinner: boolean }>`
+    color: ${props => props.$isWinner ? '#2ecc71' : '#e74c3c'};
     margin-bottom: 20px;
     font-size: 28px;
 `;
 
-const WinnerText = styled.p<{ isWinner: boolean }>`
+const WinnerText = styled.p<{ $isWinner: boolean }>`
     font-size: 18px;
     margin-bottom: 20px;
-    color: ${props => props.isWinner ? '#27ae60' : '#c0392b'};
+    color: ${props => props.$isWinner ? '#27ae60' : '#c0392b'};
 `;
 
 const PlayAgainButton = styled.button`
@@ -151,7 +151,7 @@ export const Board: React.FC<BoardProps> = ({ game, currentPlayerId, onCellClick
             <Cell 
                 key={index}
                 onClick={() => isMyTurn && onCellClick(row, col)}
-                isWinningCell={false}
+                $isWinningCell={false}
             >
                 {symbol}
             </Cell>
@@ -163,7 +163,7 @@ export const Board: React.FC<BoardProps> = ({ game, currentPlayerId, onCellClick
         return game.winner === game.player1Id ? game.player1Name : game.player2Name;
     };
 
-    const amIWinner = getWinnerName() === (isPlayer1 ? game.player1Name : game.player2Name);
+    const amIWinner = game.winner === currentPlayerId;
 
     return (
         <BoardContainer>
@@ -186,10 +186,10 @@ export const Board: React.FC<BoardProps> = ({ game, currentPlayerId, onCellClick
             {game.status === "Finished" && game.winner && (
                 <WinnerModal>
                     <WinnerContent>
-                        <WinnerTitle isWinner={amIWinner}>
+                        <WinnerTitle $isWinner={amIWinner}>
                             {amIWinner ? '🎉 Chúc mừng! 🎉' : '😢 Thua cuộc! 😢'}
                         </WinnerTitle>
-                        <WinnerText isWinner={amIWinner}>
+                        <WinnerText $isWinner={amIWinner}>
                             {amIWinner 
                                 ? "Bạn đã chiến thắng một thằng thua cuộc!" 
                                 : `${getWinnerName()} đã chiến thắng rồi thằng thua cuộc!`}

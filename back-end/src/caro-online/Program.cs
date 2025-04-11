@@ -15,7 +15,7 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.WithOrigins("http://localhost:3002", "https://caro.iamdwn.dev")
+        policy.WithOrigins("http://localhost:3002", "https://caro.iamdwn.dev", "https://www.caro.iamdwn.dev")
               .AllowAnyMethod()
               .AllowAnyHeader()
               .AllowCredentials();

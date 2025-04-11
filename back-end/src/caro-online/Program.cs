@@ -15,8 +15,7 @@ builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(builder =>
     {
-        builder.WithOrigins("http://localhost:3002")
-               .WithOrigins("https://caro.iamdwn.dev")
+        builder.WithOrigins("http://localhost:3002", "https://caro.iamdwn.dev")
                .AllowAnyMethod()
                .AllowAnyHeader()
                .AllowCredentials()

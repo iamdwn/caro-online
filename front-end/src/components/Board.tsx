@@ -62,6 +62,21 @@ const PlayerStatus = styled.div<{ isCurrentPlayer?: boolean; isWinner?: boolean 
                 ? '#3b82f6'
                 : '#e2e8f0'
     };
+
+    .waiting {
+        display: inline-block;
+        animation: rotate 2s infinite linear;
+        transform-origin: center;
+    }
+
+    @keyframes rotate {
+        0% {
+            transform: rotate(0deg);
+        }
+        100% {
+            transform: rotate(360deg);
+        }
+    }
 `;
 
 const TurnIndicator = styled.div<{ isMyTurn: boolean }>`
@@ -73,6 +88,21 @@ const TurnIndicator = styled.div<{ isMyTurn: boolean }>`
     background: ${props => props.isMyTurn ? '#ecfdf5' : '#fef2f2'};
     border-radius: 10px;
     border: 1px solid ${props => props.isMyTurn ? '#6ee7b7' : '#fecaca'};
+
+    @keyframes rotate {
+        0% {
+            transform: rotate(0deg);
+        }
+        100% {
+            transform: rotate(360deg);
+        }
+    }
+
+    .hourglass {
+        display: inline-block;
+        animation: rotate 2s infinite linear;
+        transform-origin: center;
+    }
 `;
 
 const ExitButton = styled.button`
@@ -271,11 +301,14 @@ export const Board: React.FC<BoardProps> = ({ game, currentPlayerId, onCellClick
                         isCurrentPlayer={!isPlayer1} 
                         isWinner={game.winner === game.player2Id}
                     >
-                        Người chơi 2 (O): {game.player2Name || 'Đang chờ...'} {!isPlayer1 && game.player2Name ? '(Bạn)' : ''}
+                        Người chơi 2 (O): {game.player2Name 
+                            ? `${game.player2Name}${!isPlayer1 ? ' (Bạn)' : ''}`
+                            : <span><span className="waiting">⌛</span> Đang chờ người chơi...</span>
+                        }
                     </PlayerStatus>
                     {game.status === "InProgress" && (
                         <TurnIndicator isMyTurn={isMyTurn}>
-                            {isMyTurn ? '🎮 Đến lượt bạn' : '⌛ Đợi đối thủ'}
+                            {isMyTurn ? '🎮 Đến lượt bạn' : <span><span className="hourglass">⌛</span> Đợi đối thủ</span>}
                         </TurnIndicator>
                     )}
                 </PlayerInfo>

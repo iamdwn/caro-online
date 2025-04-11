@@ -22,7 +22,11 @@ builder.Services.AddCors(options =>
     });
 });
 
-builder.Services.AddSignalR();
+builder.Services.AddSignalR(options =>
+{
+    options.EnableDetailedErrors = true;
+});
+
 builder.Services.AddScoped<IGameService, GameService>();
 
 var app = builder.Build();
@@ -30,9 +34,9 @@ var app = builder.Build();
 app.UseSwagger();
 app.UseSwaggerUI();
 
-app.UseCors("AllowFrontend");
-
 app.UseRouting();
+
+app.UseCors("AllowFrontend");
 
 app.UseExceptionHandler(errorApp =>
 {

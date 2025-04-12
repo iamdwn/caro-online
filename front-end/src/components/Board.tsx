@@ -498,16 +498,95 @@ const ExitButton = styled.button`
     }
 `;
 
-const Grid = styled.div`
-    display: grid;
-    grid-template-columns: repeat(15, 35px);
-    gap: 0;
+const GridContainer = styled.div`
     background: #f8fafc;
     padding: 10px;
     border-radius: 12px;
     margin: 0 auto;
-    max-width: fit-content;
+    width: 100%;
+    max-width: 800px;
+    height: 600px;
     box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+    position: relative;
+    overflow: hidden;
+
+    &::before, &::after {
+        content: '';
+        position: absolute;
+        left: 0;
+        right: 0;
+        height: 40px;
+        pointer-events: none;
+        z-index: 2;
+    }
+
+    &::before {
+        top: 0;
+        background: linear-gradient(to bottom, #f8fafc 20%, transparent);
+    }
+
+    &::after {
+        bottom: 0;
+        background: linear-gradient(to top, #f8fafc 20%, transparent);
+    }
+
+    &::before, &::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        width: 40px;
+        pointer-events: none;
+        z-index: 2;
+    }
+
+    &::before {
+        left: 0;
+        background: linear-gradient(to right, #f8fafc 20%, transparent);
+    }
+
+    &::after {
+        right: 0;
+        background: linear-gradient(to left, #f8fafc 20%, transparent);
+    }
+`;
+
+const GridScroller = styled.div`
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    padding: 20px;
+    box-sizing: border-box;
+
+    /* Custom scrollbar */
+    &::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+    }
+
+    &::-webkit-scrollbar-track {
+        background: rgba(0,0,0,0.05);
+        border-radius: 4px;
+    }
+
+    &::-webkit-scrollbar-thumb {
+        background: rgba(0,0,0,0.1);
+        border-radius: 4px;
+
+        &:hover {
+            background: rgba(0,0,0,0.15);
+        }
+    }
+`;
+
+const Grid = styled.div`
+    display: grid;
+    grid-template-columns: repeat(100, 35px);
+    grid-template-rows: repeat(100, 35px);
+    gap: 0;
+    background: #f8fafc;
+    margin: 0 auto;
+    width: fit-content;
 `;
 
 const Cell = styled.div<{ $isWinningCell?: boolean }>`
@@ -642,8 +721,8 @@ export const Board: React.FC<BoardProps> = ({ game, currentPlayerId, onCellClick
     };
 
     const renderCell = (index: number) => {
-        const row = Math.floor(index / 15);
-        const col = index % 15;
+        const row = Math.floor(index / 100);
+        const col = index % 100;
         const value = game.board?.[index] ?? 0;
         
         let symbol = '';
@@ -754,9 +833,13 @@ export const Board: React.FC<BoardProps> = ({ game, currentPlayerId, onCellClick
                     </PlayerCard>
                 </PlayersContainer>
             </GameInfo>
-            <Grid>
-                {Array(225).fill(null).map((_, index) => renderCell(index))}
-            </Grid>
+            <GridContainer>
+                <GridScroller>
+                    <Grid>
+                        {Array(10000).fill(null).map((_, index) => renderCell(index))}
+                    </Grid>
+                </GridScroller>
+            </GridContainer>
 
             {game.status === "Finished" && game.winner && (
                 <WinnerModal>

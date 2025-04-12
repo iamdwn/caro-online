@@ -69,7 +69,7 @@ namespace caro_online.Services
                     Player1Id = userId,
                     Player1Name = playerName,
                     Status = "Waiting",
-                    Board = new int[225],
+                    Board = new int[50 * 50],
                     CreatedAt = DateTime.UtcNow
                 };
 
@@ -245,10 +245,10 @@ namespace caro_online.Services
                     throw new Exception("Chưa đến lượt của bạn");
                 }
 
-                int index = row * 15 + col;
+                int index = row * 50 + col;
                 if (game.Board == null)
                 {
-                    game.Board = new int[225];
+                    game.Board = new int[2500];
                 }
 
                 if (game.Board[index] != 0)
@@ -271,10 +271,10 @@ namespace caro_online.Services
         {
             var directions = new[]
             {
-                (1, 0), 
-                (0, 1),  
-                (1, 1), 
-                (1, -1)
+                (1, 0),  // Dọc
+                (0, 1),  // Ngang
+                (1, 1),  // Chéo xuống
+                (1, -1)  // Chéo lên
             };
 
             var lastPlayerId = game.CurrentTurn == game.Player1Id ? game.Player2Id : game.Player1Id;
@@ -283,29 +283,36 @@ namespace caro_online.Services
             foreach (var (dx, dy) in directions)
             {
                 var count = 1;
+                var maxCount = 1;
 
+                // Kiểm tra theo chiều thuận
                 for (var i = 1; i < 5; i++)
                 {
                     var newRow = row + dx * i;
                     var newCol = col + dy * i;
-                    if (newRow < 0 || newRow >= 15 || newCol < 0 || newCol >= 15) break;
-                    if (game.Board[newRow * 15 + newCol] != currentPlayer) break;
+                    if (newRow < 0 || newRow >= 50 || newCol < 0 || newCol >= 50) break;
+                    if (game.Board[newRow * 50 + newCol] != currentPlayer) break;
                     count++;
+                    maxCount = Math.Max(maxCount, count);
                 }
 
+                // Kiểm tra theo chiều ngược lại
+                count = maxCount;
                 for (var i = 1; i < 5; i++)
                 {
                     var newRow = row - dx * i;
                     var newCol = col - dy * i;
-                    if (newRow < 0 || newRow >= 15 || newCol < 0 || newCol >= 15) break;
-                    if (game.Board[newRow * 15 + newCol] != currentPlayer) break;
+                    if (newRow < 0 || newRow >= 50 || newCol < 0 || newCol >= 50) break;
+                    if (game.Board[newRow * 50 + newCol] != currentPlayer) break;
                     count++;
+                    maxCount = Math.Max(maxCount, count);
                 }
 
-                if (count >= 5)
+                if (maxCount >= 5)
                 {
                     game.Winner = lastPlayerId;
                     game.Status = GameStatus.Finished.ToString();
+                    game.EndedAt = DateTime.UtcNow;
                     AddFinishedGame(game);
                     _hubContext.Clients.All.SendAsync("GameFinished", game);
                     return;

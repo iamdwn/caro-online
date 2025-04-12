@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import styled from 'styled-components';
 import { Game } from '../types/game';
 
@@ -509,84 +509,29 @@ const GridContainer = styled.div`
     box-shadow: 0 4px 20px rgba(0,0,0,0.06);
     position: relative;
     overflow: hidden;
-
-    &::before, &::after {
-        content: '';
-        position: absolute;
-        left: 0;
-        right: 0;
-        height: 40px;
-        pointer-events: none;
-        z-index: 2;
-    }
-
-    &::before {
-        top: 0;
-        background: linear-gradient(to bottom, #f8fafc 20%, transparent);
-    }
-
-    &::after {
-        bottom: 0;
-        background: linear-gradient(to top, #f8fafc 20%, transparent);
-    }
-
-    &::before, &::after {
-        content: '';
-        position: absolute;
-        top: 0;
-        bottom: 0;
-        width: 40px;
-        pointer-events: none;
-        z-index: 2;
-    }
-
-    &::before {
-        left: 0;
-        background: linear-gradient(to right, #f8fafc 20%, transparent);
-    }
-
-    &::after {
-        right: 0;
-        background: linear-gradient(to left, #f8fafc 20%, transparent);
-    }
 `;
 
-const GridScroller = styled.div`
+const GridScroller = styled.div<{ $isDragging: boolean }>`
     width: 100%;
     height: 100%;
-    overflow: auto;
+    overflow: hidden;
     padding: 20px;
     box-sizing: border-box;
-
-    /* Custom scrollbar */
-    &::-webkit-scrollbar {
-        width: 8px;
-        height: 8px;
-    }
-
-    &::-webkit-scrollbar-track {
-        background: rgba(0,0,0,0.05);
-        border-radius: 4px;
-    }
-
-    &::-webkit-scrollbar-thumb {
-        background: rgba(0,0,0,0.1);
-        border-radius: 4px;
-
-        &:hover {
-            background: rgba(0,0,0,0.15);
-        }
-    }
+    cursor: ${props => props.$isDragging ? 'grabbing' : 'grab'};
+    user-select: none;
 `;
 
-const Grid = styled.div`
+const Grid = styled.div<{ $x: number; $y: number; $scale: number }>`
     display: grid;
-    grid-template-columns: repeat(100, 35px);
-    grid-template-rows: repeat(100, 35px);
+    grid-template-columns: repeat(50, 35px);
+    grid-template-rows: repeat(50, 35px);
     gap: 0;
     background: #f8fafc;
     margin: 0 auto;
     width: fit-content;
+    transform: translate3d(${props => props.$x}px, ${props => props.$y}px, 0) scale(${props => props.$scale});
+    will-change: transform;
+    transition: transform 0.1s ease;
 `;
 
 const Cell = styled.div<{ $isWinningCell?: boolean }>`
@@ -701,10 +646,115 @@ interface BoardProps {
 
 export const Board: React.FC<BoardProps> = ({ game, currentPlayerId, onCellClick, onExitRoom }) => {
     const [isExiting, setIsExiting] = useState(false);
+    const [position, setPosition] = useState({ x: 0, y: 0 });
+    const [scale, setScale] = useState(1);
+    const [isDragging, setIsDragging] = useState(false);
+    const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+    const gridRef = useRef<HTMLDivElement>(null);
     const isMyTurn = game.currentTurn === currentPlayerId;
     const isPlayer1 = currentPlayerId === game.player1Id;
-    const mySymbol = isPlayer1 ? 'X' : 'O';
-    const opponentSymbol = isPlayer1 ? 'O' : 'X';
+
+    const handleMouseDown = (e: React.MouseEvent) => {
+        setIsDragging(true);
+        setDragStart({
+            x: e.clientX - position.x,
+            y: e.clientY - position.y
+        });
+    };
+
+    const handleMouseMove = useCallback((e: React.MouseEvent) => {
+        if (!isDragging) return;
+        
+        setPosition({
+            x: e.clientX - dragStart.x,
+            y: e.clientY - dragStart.y
+        });
+    }, [isDragging, dragStart]);
+
+    const handleMouseUp = () => {
+        setIsDragging(false);
+    };
+
+    const handleWheel = useCallback((e: React.WheelEvent) => {
+        if (e.ctrlKey) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            const rect = gridRef.current?.getBoundingClientRect();
+            if (!rect) return;
+
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+            
+            const delta = -e.deltaY * 0.0003;
+            const newScale = Math.min(Math.max(0.5, scale + delta), 2);
+            
+            if (Math.abs(newScale - scale) > 0.001) {
+                const scaleChange = newScale / scale;
+                const offsetX = (mouseX - position.x) * (1 - scaleChange);
+                const offsetY = (mouseY - position.y) * (1 - scaleChange);
+
+                setScale(newScale);
+                setPosition({
+                    x: position.x + offsetX,
+                    y: position.y + offsetY
+                });
+            }
+        } else {
+            const deltaY = e.deltaY;
+            const deltaX = e.deltaX;
+            
+            setPosition(prev => ({
+                x: prev.x - deltaX,
+                y: prev.y - deltaY
+            }));
+        }
+    }, [scale, position]);
+
+    React.useEffect(() => {
+        const preventDefault = (e: Event) => {
+            e.preventDefault();
+        };
+
+        const gridElement = gridRef.current;
+        if (gridElement) {
+            gridElement.addEventListener('wheel', preventDefault, { passive: false });
+            return () => {
+                gridElement.removeEventListener('wheel', preventDefault);
+            };
+        }
+    }, []);
+
+    const renderCell = useCallback((index: number) => {
+        const row = Math.floor(index / 50);
+        const col = index % 50;
+        
+        // Lấy giá trị trực tiếp từ vị trí trong mảng board
+        const boardIndex = row * 50 + col;
+        const value = game.board?.[boardIndex] ?? 0;
+        
+        let symbol = '';
+        if (value === 1) symbol = 'X';
+        if (value === 2) symbol = 'O';
+
+        const canPlay = isMyTurn && !value;
+
+        return (
+            <Cell 
+                key={`${row}-${col}`}
+                onClick={() => canPlay && onCellClick(row, col)}
+                $isWinningCell={false}
+                style={{
+                    color: value === 1 ? '#e74c3c' : '#3498db',
+                    cursor: canPlay ? 'pointer' : 'not-allowed',
+                    background: value ? '#ffffff' : '#f8fafc',
+                    borderColor: '#e2e8f0'
+                }}
+            >
+                {symbol}
+            </Cell>
+        );
+    }, [game.board, isMyTurn, onCellClick]);
 
     const handleExit = async () => {
         setIsExiting(true);
@@ -718,30 +768,6 @@ export const Board: React.FC<BoardProps> = ({ game, currentPlayerId, onCellClick
             await new Promise(resolve => setTimeout(resolve, 200));
             setIsExiting(false);
         }
-    };
-
-    const renderCell = (index: number) => {
-        const row = Math.floor(index / 100);
-        const col = index % 100;
-        const value = game.board?.[index] ?? 0;
-        
-        let symbol = '';
-        if (value === 1) symbol = 'X';
-        if (value === 2) symbol = 'O';
-
-        return (
-            <Cell 
-                key={index}
-                onClick={() => isMyTurn && onCellClick(row, col)}
-                $isWinningCell={false}
-                style={{
-                    color: value === 1 ? '#e74c3c' : '#3498db',
-                    cursor: isMyTurn ? 'pointer' : 'not-allowed'
-                }}
-            >
-                {symbol}
-            </Cell>
-        );
     };
 
     const getWinnerName = () => {
@@ -834,9 +860,17 @@ export const Board: React.FC<BoardProps> = ({ game, currentPlayerId, onCellClick
                 </PlayersContainer>
             </GameInfo>
             <GridContainer>
-                <GridScroller>
-                    <Grid>
-                        {Array(10000).fill(null).map((_, index) => renderCell(index))}
+                <GridScroller
+                    ref={gridRef}
+                    $isDragging={isDragging}
+                    onMouseDown={handleMouseDown}
+                    onMouseMove={handleMouseMove}
+                    onMouseUp={handleMouseUp}
+                    onMouseLeave={handleMouseUp}
+                    onWheel={handleWheel}
+                >
+                    <Grid $x={position.x} $y={position.y} $scale={scale}>
+                        {Array(2500).fill(null).map((_, index) => renderCell(index))}
                     </Grid>
                 </GridScroller>
             </GridContainer>

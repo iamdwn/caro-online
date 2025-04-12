@@ -14,7 +14,7 @@ namespace caro_online.Models
         public string? Player2Name { get; set; }
         public string Status { get; set; } = "Waiting";
         public string Winner { get; set; } = string.Empty;
-        public int[] Board { get; set; } = new int[15 * 15];
+        public int[] Board { get; set; } = new int[50 * 50];
         public string CurrentTurn { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime? EndedAt { get; set; }
@@ -23,12 +23,12 @@ namespace caro_online.Models
 
         public int GetCell(int row, int col)
         {
-            return Board[row * 15 + col];
+            return Board[row * 50 + col];
         }
 
         public void SetCell(int row, int col, int value)
         {
-            Board[row * 15 + col] = value;
+            Board[row * 50 + col] = value;
         }
     }
 } 

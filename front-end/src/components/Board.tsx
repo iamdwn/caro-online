@@ -50,7 +50,7 @@ const RoomTitle = styled.h2`
 
     &::before {
         content: '';
-        width: 35px;
+        width: 36px;
         height: 32px;
         background: linear-gradient(135deg, #fee2e2, #fecaca);
         border-radius: 8px;

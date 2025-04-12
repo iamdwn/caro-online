@@ -1,8 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import styled from 'styled-components';
-import { Game as GameType } from '../types/game';
+import type { Game as GameType } from '../types/game';
+import { GameStatus, parseBoard, type Board, type BoardCell } from '../types/game';
 import { gameService } from '../services/gameService';
-import { Board } from './Board';
+import { Board as GameBoard } from './Board';
+import { HistoryBoard } from './HistoryBoard';
 
 const GameContainer = styled.div`
     max-width: 800px;
@@ -141,12 +143,16 @@ const Modal = styled.div`
 const ModalContent = styled.div`
     background: white;
     padding: 20px;
-    border-radius: 8px;
-    max-width: 600px;
-    width: 90%;
-    max-height: 90vh;
-    overflow-y: auto;
+    border-radius: 20px;
+    width: 90vw;
+    height: 90vh;
+    max-width: 1200px;
+    max-height: 800px;
     position: relative;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
 `;
 
 const CloseButton = styled.button`
@@ -164,33 +170,330 @@ const CloseButton = styled.button`
     }
 `;
 
-const GameReplayInfo = styled.div`
-    margin-bottom: 20px;
-    padding: 15px;
-    background-color: #f5f5f5;
-    border-radius: 5px;
+const GameReplayContainer = styled.div`
+    max-width: 1200px;
+    margin: 0 auto;
+    height: 90vh;
+    display: flex;
+    flex-direction: column;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    animation: slideIn 0.5s ease-out;
+    overflow: hidden;
+
+    @keyframes slideIn {
+        from {
+            opacity: 0;
+            transform: translateY(-20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
 `;
 
-const GameGrid = styled.div`
+const GameReplayHeader = styled.div`
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 24px;
+    background: linear-gradient(135deg, #f8fafc, #ffffff);
+    border-radius: 16px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    border: 1px solid #e2e8f0;
+    animation: fadeIn 0.6s ease-out;
+
+    .title {
+        display: flex;
+        align-items: center;
+        gap: 24px;
+
+        h3 {
+            margin: 0;
+            font-size: 20px;
+            color: #1e293b;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            position: relative;
+            overflow: hidden;
+
+            &::before {
+                content: '🎮';
+                font-size: 24px;
+                animation: float 2s infinite ease-in-out;
+            }
+
+            &::after {
+                content: '';
+                position: absolute;
+                left: 0;
+                bottom: -2px;
+                width: 100%;
+                height: 2px;
+                background: linear-gradient(90deg, #3b82f6, #2563eb);
+                transform: translateX(-100%);
+                animation: slideRight 0.8s ease-out forwards;
+            }
+        }
+
+        .info {
+            display: flex;
+            gap: 20px;
+            animation: fadeInUp 0.8s ease-out;
+
+            .item {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                font-size: 15px;
+                color: #64748b;
+                padding: 6px 12px;
+                background: #f1f5f9;
+                border-radius: 8px;
+                transition: all 0.3s ease;
+                position: relative;
+                overflow: hidden;
+
+                &::before {
+                    content: '';
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background: linear-gradient(90deg, rgba(255,255,255,0.1), rgba(255,255,255,0.2));
+                    transform: translateX(-100%);
+                    transition: transform 0.5s ease;
+                }
+
+                &:hover {
+                    transform: translateY(-2px);
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+
+                    &::before {
+                        transform: translateX(100%);
+                    }
+                }
+
+                .label {
+                    color: #94a3b8;
+                    transition: color 0.3s ease;
+                }
+
+                &.winner {
+                    background: linear-gradient(135deg, #dcfce7, #bbf7d0);
+                    color: #16a34a;
+                    animation: pulse 2s infinite;
+
+                    .label {
+                        color: #22c55e;
+                    }
+
+                    &:hover {
+                        background: linear-gradient(135deg, #bbf7d0, #86efac);
+                    }
+                }
+            }
+        }
+    }
+
+    button {
+        padding: 10px 20px;
+        background: linear-gradient(135deg, #3b82f6, #2563eb);
+        color: white;
+        border: none;
+        border-radius: 12px;
+        cursor: pointer;
+        font-size: 15px;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2);
+        position: relative;
+        overflow: hidden;
+
+        &::before {
+            content: '⬅️';
+            font-size: 18px;
+            transition: transform 0.3s ease;
+        }
+
+        &::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, rgba(255,255,255,0), rgba(255,255,255,0.2), rgba(255,255,255,0));
+            transform: translateX(-100%);
+            transition: transform 0.5s ease;
+        }
+
+        &:hover {
+            transform: translateX(-2px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+
+            &::before {
+                transform: translateX(-4px);
+            }
+
+            &::after {
+                transform: translateX(100%);
+            }
+        }
+
+        &:active {
+            transform: scale(0.98);
+        }
+    }
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+        }
+        to {
+            opacity: 1;
+        }
+    }
+
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @keyframes float {
+        0%, 100% {
+            transform: translateY(0);
+        }
+        50% {
+            transform: translateY(-4px);
+        }
+    }
+
+    @keyframes slideRight {
+        to {
+            transform: translateX(0);
+        }
+    }
+
+    @keyframes pulse {
+        0% {
+            box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4);
+        }
+        70% {
+            box-shadow: 0 0 0 6px rgba(34, 197, 94, 0);
+        }
+        100% {
+            box-shadow: 0 0 0 0 rgba(34, 197, 94, 0);
+        }
+    }
+`;
+
+const GameReplayBoard = styled.div`
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+    touch-action: none;
+    background: #f8fafc;
+    margin: 20px;
+    border-radius: 8px;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
+`;
+
+interface GameGridProps {
+    $x: number;
+    $y: number;
+    $scale: number;
+}
+
+const GameGrid = styled.div<GameGridProps>`
     display: grid;
-    grid-template-columns: repeat(15, 30px);
+    grid-template-columns: repeat(50, 35px);
+    grid-template-rows: repeat(50, 35px);
     gap: 1px;
-    background-color: #ddd;
-    padding: 1px;
-    border: 1px solid #999;
-    margin: 20px auto;
+    background-color: #e2e8f0;
+    transform: translate3d(${props => props.$x}px, ${props => props.$y}px, 0) scale(${props => props.$scale});
+    will-change: transform;
+    transition: transform 0.1s ease;
+    position: absolute;
+    border: 1px solid #e2e8f0;
 `;
 
 const GameCell = styled.div<{ value: number }>`
-    width: 30px;
-    height: 30px;
-    background-color: white;
+    width: 35px;
+    height: 35px;
+    background-color: ${props => {
+        switch (props.value) {
+            case 1: return '#ffebee';
+            case 2: return '#e3f2fd';
+            default: return 'white';
+        }
+    }};
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 18px;
-    border: 1px solid #ddd;
-    color: ${props => props.value === 1 ? '#e74c3c' : props.value === 2 ? '#3498db' : 'transparent'};
+    font-size: 24px;
+    font-weight: bold;
+    color: ${props => {
+        switch (props.value) {
+            case 1: return '#f44336';
+            case 2: return '#2196f3';
+            default: return 'transparent';
+        }
+    }};
+    border: 2px solid ${props => {
+        switch (props.value) {
+            case 1: return '#ef9a9a';
+            case 2: return '#90caf9';
+            default: return '#e2e8f0';
+        }
+    }};
+    position: relative;
+    transition: all 0.2s ease;
+
+    &:after {
+        content: '';
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        background-color: ${props => {
+            switch (props.value) {
+                case 1: return 'rgba(244, 67, 54, 0.1)';
+                case 2: return 'rgba(33, 150, 243, 0.1)';
+                default: return 'transparent';
+            }
+        }};
+        pointer-events: none;
+    }
+`;
+
+const GameGridScroller = styled.div<{ $isDragging: boolean }>`
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    overflow: hidden;
+    cursor: ${props => props.$isDragging ? 'grabbing' : 'grab'};
+    user-select: none;
+    touch-action: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 `;
 
 export const Game: React.FC = () => {
@@ -212,6 +515,15 @@ export const Game: React.FC = () => {
     const [isJoining, setIsJoining] = useState(false);
     const [isMakingMove, setIsMakingMove] = useState(false);
     const [selectedGame, setSelectedGame] = useState<GameType | null>(null);
+    const [historyPosition, setHistoryPosition] = useState({ x: 0, y: 0 });
+    const [historyScale, setHistoryScale] = useState(1);
+    const [historyIsDragging, setHistoryIsDragging] = useState(false);
+    const [historyDragStart, setHistoryDragStart] = useState({ x: 0, y: 0 });
+    const historyGridRef = useRef<HTMLDivElement>(null);
+    const [currentMoveIndex, setCurrentMoveIndex] = useState(0);
+    const [replayMoves, setReplayMoves] = useState<{row: number, col: number, value: number}[]>([]);
+    const [isAutoPlaying, setIsAutoPlaying] = useState(false);
+    const autoPlayIntervalRef = useRef<NodeJS.Timeout>();
 
     useEffect(() => {
         localStorage.setItem('userId', userId);
@@ -461,12 +773,281 @@ export const Game: React.FC = () => {
     };
 
     const handleViewGameHistory = (game: GameType) => {
-        setSelectedGame(game);
+        const boardData = parseBoard(game.board);
+        setSelectedGame({
+            ...game,
+            board: boardData
+        });
+    };
+
+    const handlePrevMove = () => {
+        if (currentMoveIndex > 0) {
+            setCurrentMoveIndex(prev => prev - 1);
+            updateBoardState(currentMoveIndex - 1);
+        }
+    };
+
+    const handleNextMove = () => {
+        if (currentMoveIndex < replayMoves.length) {
+            setCurrentMoveIndex(prev => prev + 1);
+            updateBoardState(currentMoveIndex + 1);
+        }
+    };
+
+    const updateBoardState = (moveIndex: number) => {
+        if (!selectedGame) return;
+
+        console.log('Updating board state to move:', moveIndex);
+        console.log('Total moves:', replayMoves.length);
+
+        let newBoard: number[] = new Array(2500).fill(0);
+        if (typeof selectedGame.board === 'string') {
+            try {
+                const parsed = JSON.parse(selectedGame.board);
+                if (Array.isArray(parsed)) {
+                    newBoard = [...parsed];
+                }
+            } catch {
+                const stringData = selectedGame.board as string;
+                newBoard = stringData.split(',').map((num: string) => parseInt(num, 10) || 0);
+            }
+        } else if (Array.isArray(selectedGame.board)) {
+            newBoard = [...selectedGame.board];
+        }
+
+        newBoard.fill(0);
+
+        for (let i = 0; i < moveIndex; i++) {
+            const move = replayMoves[i];
+            if (move) {
+                const index = move.row * 50 + move.col;
+                newBoard[index] = move.value;
+                console.log(`Applied move ${i + 1}: (${move.row}, ${move.col}) = ${move.value}`);
+            }
+        }
+
+        setSelectedGame(prev => {
+            if (!prev) return null;
+            const boardData = parseBoard(prev.board);
+            const updated: GameType = {
+                ...prev,
+                board: boardData
+            };
+            return updated;
+        });
+    };
+
+    const toggleAutoPlay = () => {
+        if (isAutoPlaying) {
+            if (autoPlayIntervalRef.current) {
+                clearInterval(autoPlayIntervalRef.current);
+            }
+            setIsAutoPlaying(false);
+        } else {
+            setIsAutoPlaying(true);
+            autoPlayIntervalRef.current = setInterval(() => {
+                setCurrentMoveIndex(prev => {
+                    if (prev >= replayMoves.length) {
+                        clearInterval(autoPlayIntervalRef.current);
+                        setIsAutoPlaying(false);
+                        return prev;
+                    }
+                    updateBoardState(prev + 1);
+                    return prev + 1;
+                });
+            }, 1000);
+        }
+    };
+
+    useEffect(() => {
+        return () => {
+            if (autoPlayIntervalRef.current) {
+                clearInterval(autoPlayIntervalRef.current);
+            }
+        };
+    }, []);
+
+    const handleHistoryMouseDown = (e: React.MouseEvent) => {
+        setHistoryIsDragging(true);
+        const rect = historyGridRef.current?.getBoundingClientRect();
+        if (!rect) return;
+        
+        setHistoryDragStart({
+            x: e.clientX - historyPosition.x,
+            y: e.clientY - historyPosition.y
+        });
+    };
+
+    const handleHistoryMouseUp = () => {
+        setHistoryIsDragging(false);
+    };
+
+    const handleHistoryWheel = useCallback((e: React.WheelEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        const speed = 15;
+        const newX = historyPosition.x - e.deltaX * speed;
+        const newY = historyPosition.y - e.deltaY * speed;
+
+        const container = historyGridRef.current?.parentElement;
+        const grid = historyGridRef.current?.querySelector('[class^="GameGrid"]');
+        if (!container || !grid) return;
+
+        const containerRect = container.getBoundingClientRect();
+        const gridRect = grid.getBoundingClientRect();
+
+        const minX = containerRect.width - gridRect.width;
+        const minY = containerRect.height - gridRect.height;
+
+        setHistoryPosition({
+            x: Math.min(0, Math.max(minX, newX)),
+            y: Math.min(0, Math.max(minY, newY))
+        });
+    }, [historyPosition]);
+
+    const handleHistoryMouseMove = useCallback((e: React.MouseEvent) => {
+        if (!historyIsDragging) return;
+
+        const newX = e.clientX - historyDragStart.x;
+        const newY = e.clientY - historyDragStart.y;
+
+        const container = historyGridRef.current?.parentElement;
+        const grid = historyGridRef.current?.querySelector('[class^="GameGrid"]');
+        if (!container || !grid) return;
+
+        const containerRect = container.getBoundingClientRect();
+        const gridRect = grid.getBoundingClientRect();
+
+        const minX = containerRect.width - gridRect.width;
+        const minY = containerRect.height - gridRect.height;
+
+        setHistoryPosition({
+            x: Math.min(0, Math.max(minX, newX)),
+            y: Math.min(0, Math.max(minY, newY))
+        });
+    }, [historyIsDragging, historyDragStart]);
+
+    useEffect(() => {
+        const style = document.createElement('style');
+        style.textContent = `
+            body {
+                touch-action: pan-x pan-y !important;
+                -ms-content-zooming: none;
+                -ms-touch-action: pan-x pan-y;
+            }
+            
+            html {
+                touch-action: manipulation;
+            }
+        `;
+        document.head.appendChild(style);
+
+        const preventZoom = (e: KeyboardEvent | TouchEvent | WheelEvent) => {
+            if (e instanceof KeyboardEvent) {
+                if (e.ctrlKey && (e.key === '+' || e.key === '-' || e.key === '=' || e.key === '_')) {
+                    e.preventDefault();
+                    return false;
+                }
+            } else if (e instanceof WheelEvent) {
+                if (e.ctrlKey || e.metaKey) {
+                    e.preventDefault();
+                    return false;
+                }
+            } else if (e instanceof TouchEvent) {
+                if (e.touches.length > 1) {
+                    e.preventDefault();
+                    return false;
+                }
+            }
+        };
+
+        window.addEventListener('keydown', preventZoom as any);
+        window.addEventListener('wheel', preventZoom as any, { passive: false });
+        window.addEventListener('touchstart', preventZoom as any, { passive: false });
+
+        document.addEventListener('gesturestart', (e) => e.preventDefault());
+        document.addEventListener('gesturechange', (e) => e.preventDefault());
+        document.addEventListener('gestureend', (e) => e.preventDefault());
+
+        return () => {
+            document.head.removeChild(style);
+            window.removeEventListener('keydown', preventZoom as any);
+            window.removeEventListener('wheel', preventZoom as any);
+            window.removeEventListener('touchstart', preventZoom as any);
+            document.removeEventListener('gesturestart', (e) => e.preventDefault());
+            document.removeEventListener('gesturechange', (e) => e.preventDefault());
+            document.removeEventListener('gestureend', (e) => e.preventDefault());
+        };
+    }, []);
+
+    useEffect(() => {
+        if (selectedGame) {
+            return () => {
+                setHistoryPosition({ x: 0, y: 0 });
+                setHistoryScale(1);
+            };
+        }
+    }, [selectedGame]);
+
+    const calculateFocusArea = (board: number[]) => {
+        const size = 50;
+        let minRow = size;
+        let maxRow = 0;
+        let minCol = size;
+        let maxCol = 0;
+        let hasMove = false;
+
+        board.forEach((value, index) => {
+            if (value !== 0) {
+                hasMove = true;
+                const row = Math.floor(index / size);
+                const col = index % size;
+                minRow = Math.min(minRow, row);
+                maxRow = Math.max(maxRow, row);
+                minCol = Math.min(minCol, col);
+                maxCol = Math.max(maxCol, col);
+            }
+        });
+
+        if (!hasMove) {
+            const center = Math.floor(size / 2);
+            return {
+                x: -center * 35,
+                y: -center * 35,
+                width: 15 * 35,
+                height: 15 * 35
+            };
+        }
+
+        const padding = 2;
+        minRow = Math.max(0, minRow - padding);
+        maxRow = Math.min(size - 1, maxRow + padding);
+        minCol = Math.max(0, minCol - padding);
+        maxCol = Math.min(size - 1, maxCol + padding);
+
+        if (maxRow - minRow < 8) {
+            const center = Math.floor((maxRow + minRow) / 2);
+            minRow = Math.max(0, center - 4);
+            maxRow = Math.min(size - 1, center + 4);
+        }
+        if (maxCol - minCol < 8) {
+            const center = Math.floor((maxCol + minCol) / 2);
+            minCol = Math.max(0, center - 4);
+            maxCol = Math.min(size - 1, center + 4);
+        }
+
+        const width = (maxCol - minCol + 1) * 35;
+        const height = (maxRow - minRow + 1) * 35;
+        const x = -minCol * 35;
+        const y = -minRow * 35;
+
+        return { x, y, width, height };
     };
 
     if (currentGame) {
         return (
-            <Board 
+            <GameBoard 
                 game={currentGame}
                 currentPlayerId={currentPlayerId || undefined}
                 onCellClick={handleCellClick}
@@ -477,7 +1058,7 @@ export const Game: React.FC = () => {
 
     return (
         <GameContainer>
-            {!currentGame && (
+            {!currentGame && !selectedGame && (
                 <>
                     <JoinGameForm>
                         <Input
@@ -560,7 +1141,7 @@ export const Game: React.FC = () => {
             )}
 
             {currentGame && (
-                <Board
+                <GameBoard
                     game={currentGame}
                     currentPlayerId={currentPlayerId ?? undefined}
                     onCellClick={handleCellClick}
@@ -569,28 +1150,35 @@ export const Game: React.FC = () => {
             )}
 
             {selectedGame && (
-                <Modal onClick={() => setSelectedGame(null)}>
-                    <ModalContent onClick={e => e.stopPropagation()}>
-                        <CloseButton onClick={() => setSelectedGame(null)}>&times;</CloseButton>
-                        <GameReplayInfo>
+                <GameReplayContainer>
+                    <GameReplayHeader>
+                        <div className="title">
                             <h3>Chi tiết trận đấu</h3>
-                            <div>Phòng: {selectedGame.roomName}</div>
-                            <div>Người chơi 1 (X): {selectedGame.player1Name}</div>
-                            <div>Người chơi 2 (O): {selectedGame.player2Name}</div>
-                            <div>Người thắng: <span style={{ color: '#27ae60', fontWeight: 'bold' }}>
-                                {selectedGame.winner === selectedGame.player1Id ? selectedGame.player1Name : selectedGame.player2Name}
-                            </span></div>
-                            <div>Thời gian: {new Date(selectedGame.createdAt).toLocaleString()}</div>
-                        </GameReplayInfo>
-                        <GameGrid>
-                            {selectedGame.board?.map((value, index) => (
-                                <GameCell key={index} value={value}>
-                                    {value === 1 ? 'X' : value === 2 ? 'O' : ''}
-                                </GameCell>
-                            ))}
-                        </GameGrid>
-                    </ModalContent>
-                </Modal>
+                            <div className="info">
+                                <div className="item">
+                                    <span className="label">Phòng:</span>
+                                    {selectedGame.roomName}
+                                </div>
+                                <div className="item">
+                                    <span className="label">X:</span>
+                                    {selectedGame.player1Name}
+                                </div>
+                                <div className="item">
+                                    <span className="label">O:</span>
+                                    {selectedGame.player2Name}
+                                </div>
+                                <div className="item winner">
+                                    <span className="label">Thắng:</span>
+                                    {selectedGame.winner === selectedGame.player1Id ? selectedGame.player1Name : selectedGame.player2Name}
+                                </div>
+                            </div>
+                        </div>
+                        <button onClick={() => setSelectedGame(null)}>Quay lại</button>
+                    </GameReplayHeader>
+                    <GameReplayBoard>
+                        <HistoryBoard game={selectedGame} />
+                    </GameReplayBoard>
+                </GameReplayContainer>
             )}
         </GameContainer>
     );

@@ -271,10 +271,10 @@ namespace caro_online.Services
         {
             var directions = new[]
             {
-                (1, 0),  // Dọc
-                (0, 1),  // Ngang
-                (1, 1),  // Chéo xuống
-                (1, -1)  // Chéo lên
+                (1, 0),
+                (0, 1),
+                (1, 1),
+                (1, -1) 
             };
 
             var lastPlayerId = game.CurrentTurn == game.Player1Id ? game.Player2Id : game.Player1Id;
@@ -285,7 +285,6 @@ namespace caro_online.Services
                 var count = 1;
                 var maxCount = 1;
 
-                // Kiểm tra theo chiều thuận
                 for (var i = 1; i < 5; i++)
                 {
                     var newRow = row + dx * i;
@@ -296,7 +295,6 @@ namespace caro_online.Services
                     maxCount = Math.Max(maxCount, count);
                 }
 
-                // Kiểm tra theo chiều ngược lại
                 count = maxCount;
                 for (var i = 1; i < 5; i++)
                 {

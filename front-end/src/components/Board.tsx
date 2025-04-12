@@ -509,6 +509,7 @@ const GridContainer = styled.div`
     box-shadow: 0 4px 20px rgba(0,0,0,0.06);
     position: relative;
     overflow: hidden;
+    touch-action: none;
 `;
 
 const GridScroller = styled.div<{ $isDragging: boolean }>`
@@ -519,6 +520,7 @@ const GridScroller = styled.div<{ $isDragging: boolean }>`
     box-sizing: border-box;
     cursor: ${props => props.$isDragging ? 'grabbing' : 'grab'};
     user-select: none;
+    touch-action: none;
 `;
 
 const Grid = styled.div<{ $x: number; $y: number; $scale: number }>`
@@ -647,7 +649,7 @@ interface BoardProps {
 export const Board: React.FC<BoardProps> = ({ game, currentPlayerId, onCellClick, onExitRoom }) => {
     const [isExiting, setIsExiting] = useState(false);
     const [position, setPosition] = useState({ x: 0, y: 0 });
-    const [scale, setScale] = useState(1);
+    const [scale, setScale] = useState(0.8);
     const [isDragging, setIsDragging] = useState(false);
     const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
     const gridRef = useRef<HTMLDivElement>(null);
@@ -655,6 +657,7 @@ export const Board: React.FC<BoardProps> = ({ game, currentPlayerId, onCellClick
     const isPlayer1 = currentPlayerId === game.player1Id;
 
     const handleMouseDown = (e: React.MouseEvent) => {
+        e.preventDefault();
         setIsDragging(true);
         setDragStart({
             x: e.clientX - position.x,
@@ -678,58 +681,36 @@ export const Board: React.FC<BoardProps> = ({ game, currentPlayerId, onCellClick
     const handleWheel = useCallback((e: React.WheelEvent) => {
         if (e.ctrlKey) {
             e.preventDefault();
-            e.stopPropagation();
-            
-            const rect = gridRef.current?.getBoundingClientRect();
-            if (!rect) return;
-
-            const mouseX = e.clientX - rect.left;
-            const mouseY = e.clientY - rect.top;
-            
-            const delta = -e.deltaY * 0.0003;
-            const newScale = Math.min(Math.max(0.5, scale + delta), 2);
-            
-            if (Math.abs(newScale - scale) > 0.001) {
-                const scaleChange = newScale / scale;
-                const offsetX = (mouseX - position.x) * (1 - scaleChange);
-                const offsetY = (mouseY - position.y) * (1 - scaleChange);
-
-                setScale(newScale);
-                setPosition({
-                    x: position.x + offsetX,
-                    y: position.y + offsetY
-                });
-            }
+            const delta = e.deltaY > 0 ? 0.9 : 1.1;
+            setScale(prev => Math.min(2, Math.max(0.3, prev * delta)));
         } else {
-            const deltaY = e.deltaY;
-            const deltaX = e.deltaX;
-            
+            const speed = 1;
             setPosition(prev => ({
-                x: prev.x - deltaX,
-                y: prev.y - deltaY
+                x: prev.x - e.deltaX * speed,
+                y: prev.y - e.deltaY * speed
             }));
         }
-    }, [scale, position]);
+    }, []);
 
     React.useEffect(() => {
-        const preventDefault = (e: Event) => {
-            e.preventDefault();
-        };
+        if (!gridRef.current) return;
 
-        const gridElement = gridRef.current;
-        if (gridElement) {
-            gridElement.addEventListener('wheel', preventDefault, { passive: false });
-            return () => {
-                gridElement.removeEventListener('wheel', preventDefault);
-            };
-        }
+        const containerRect = gridRef.current.getBoundingClientRect();
+        const gridSize = 50 * 35;
+        const initialScale = 0.8;
+        const scaledSize = gridSize * initialScale;
+        
+        setPosition({
+            x: (containerRect.width - scaledSize) / 2,
+            y: (containerRect.height - scaledSize) / 2
+        });
+        setScale(initialScale);
     }, []);
 
     const renderCell = useCallback((index: number) => {
         const row = Math.floor(index / 50);
         const col = index % 50;
         
-        // Lấy giá trị trực tiếp từ vị trí trong mảng board
         const boardIndex = row * 50 + col;
         const value = game.board?.[boardIndex] ?? 0;
         

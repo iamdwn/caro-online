@@ -215,6 +215,20 @@ class GameService {
         this.connection.off('GameFinished', callback);
     }
 
+    public async getGameMoves(gameId: string): Promise<Array<{row: number, col: number, playerId: string}>> {
+        try {
+            await this.ensureConnection();
+            if (!this.connection) {
+                throw new Error('Connection is not initialized');
+            }
+            const response = await this.connection.invoke('GetGameMoves', gameId);
+            return response;
+        } catch (error) {
+            console.error('Error getting game moves:', error);
+            return [];
+        }
+    }
+
     public showError(message: string) {
         if (this.errorCallback) {
             this.errorCallback(message);

@@ -2,6 +2,10 @@ import React, { useState, useRef, useCallback } from 'react';
 import styled from 'styled-components';
 import { Game } from '../types/game';
 
+const GlobalStyle = styled.div`
+    @import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600&family=Outfit:wght@400;500;600&family=Inter:wght@400;500;600&family=Manrope:wght@500;600;700&display=swap');
+`;
+
 const BoardContainer = styled.div`
     max-width: 800px;
     margin: 0 auto;
@@ -10,17 +14,20 @@ const BoardContainer = styled.div`
     background: linear-gradient(145deg, #ffffff, #f5f7fa);
     border-radius: 20px;
     box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+    font-family: 'Be Vietnam Pro', 'Inter', system-ui, sans-serif;
 `;
 
 const GameInfo = styled.div`
     margin-bottom: 30px;
-    padding: 20px;
-    background: #ffffff;
-    border-radius: 16px;
+    padding: 24px;
+    background: rgba(255, 255, 255, 0.8);
+    border-radius: 20px;
     display: flex;
     flex-direction: column;
-    gap: 20px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+    gap: 24px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
 `;
 
 const TopBar = styled.div`
@@ -34,7 +41,7 @@ const RoomTitle = styled.h2`
     color: #2d3748;
     font-size: 22px;
     font-weight: 600;
-    font-family: 'Segoe UI', system-ui, sans-serif;
+    font-family: 'Space Grotesk', 'Manrope', system-ui, sans-serif;
     padding: 16px 20px;
     background: linear-gradient(135deg, #f8fafc, #f1f5f9);
     border-radius: 12px;
@@ -136,27 +143,30 @@ const RoomTitle = styled.h2`
 const PlayersContainer = styled.div`
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 16px;
+    gap: 24px;
     width: 100%;
 `;
 
-const PlayerCard = styled.div<{ isCurrentPlayer?: boolean; isWinner?: boolean }>`
-    padding: 20px;
+const PlayerCard = styled.div<{ isCurrentPlayer?: boolean; isWinner?: boolean; isCurrentTurn?: boolean }>`
+    padding: 24px;
     background: ${props => 
         props.isWinner 
-            ? 'linear-gradient(135deg, #4ade80, #22c55e)'
-            : props.isCurrentPlayer 
-                ? 'linear-gradient(135deg, #60a5fa, #3b82f6)'
-                : '#ffffff'
+            ? 'linear-gradient(135deg, rgba(74, 222, 128, 0.15), rgba(34, 197, 94, 0.05))'
+            : props.isCurrentTurn
+                ? 'linear-gradient(135deg, rgba(96, 165, 250, 0.15), rgba(59, 130, 246, 0.05))'
+                : 'linear-gradient(135deg, rgba(248, 250, 252, 0.6), rgba(241, 245, 249, 0.4))'
     };
-    border-radius: 12px;
-    transition: all 0.3s ease;
+    border-radius: 20px;
+    transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
     position: relative;
     overflow: hidden;
+    backdrop-filter: blur(10px);
     box-shadow: ${props => 
-        (props.isCurrentPlayer || props.isWinner) 
-            ? '0 8px 20px rgba(0,0,0,0.1)' 
-            : '0 4px 12px rgba(0,0,0,0.05)'
+        props.isWinner 
+            ? '0 8px 24px rgba(74, 222, 128, 0.12), inset 0 0 0 1px rgba(74, 222, 128, 0.15)'
+            : props.isCurrentTurn
+                ? '0 8px 24px rgba(59, 130, 246, 0.12), inset 0 0 0 1px rgba(59, 130, 246, 0.15)'
+                : '0 4px 16px rgba(0, 0, 0, 0.02), inset 0 0 0 1px rgba(255, 255, 255, 0.3)'
     };
     display: flex;
     flex-direction: column;
@@ -166,113 +176,172 @@ const PlayerCard = styled.div<{ isCurrentPlayer?: boolean; isWinner?: boolean }>
     &::before {
         content: '';
         position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        height: 4px;
+        inset: 0;
+        border-radius: 20px;
+        padding: 1px;
         background: ${props => 
             props.isWinner 
-                ? '#22c55e'
-                : props.isCurrentPlayer 
-                    ? '#3b82f6'
-                    : '#e2e8f0'
+                ? 'linear-gradient(135deg, #4ade8066, #22c55e66)'
+                : props.isCurrentTurn
+                    ? 'linear-gradient(135deg, #60a5fa66, #3b82f666)'
+                    : 'linear-gradient(135deg, transparent, transparent)'
         };
+        mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+        -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+        -webkit-mask-composite: xor;
+        mask-composite: exclude;
+    }
+
+    ${props => props.isCurrentTurn && `
+        animation: softPulse 3s ease-in-out infinite;
+        @keyframes softPulse {
+            0%, 100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-4px);
+            }
+        }
+    `}
+
+    &:hover {
+        transform: translateY(-2px);
+        transition: transform 0.2s ease-out;
     }
 `;
 
-const PlayerSymbol = styled.div<{ isX?: boolean; isMyTurn?: boolean }>`
-    font-size: 36px;
-    font-weight: 700;
-    margin-bottom: 12px;
+const PlayerSymbol = styled.div<{ isX?: boolean }>`
+    font-size: 38px;
+    font-weight: 500;
+    margin-bottom: 16px;
     color: ${props => props.isX ? '#e74c3c' : '#3498db'};
     text-shadow: ${props => 
         props.isX 
-            ? '0 0 15px rgba(231, 76, 60, 0.3)'
-            : '0 0 15px rgba(52, 152, 219, 0.3)'
+            ? '0 0 20px rgba(231, 76, 60, 0.3)'
+            : '0 0 20px rgba(52, 152, 219, 0.3)'
     };
     background: ${props => 
         props.isX 
-            ? 'linear-gradient(135deg, #fee2e2, #fecaca)'
-            : 'linear-gradient(135deg, #dbeafe, #bfdbfe)'
+            ? 'linear-gradient(135deg, rgba(254, 226, 226, 0.6), rgba(254, 202, 202, 0.6))'
+            : 'linear-gradient(135deg, rgba(219, 234, 254, 0.6), rgba(191, 219, 254, 0.6))'
     };
-    width: 60px;
-    height: 60px;
+    width: 68px;
+    height: 68px;
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 50%;
+    border-radius: 20px;
     position: relative;
+    backdrop-filter: blur(8px);
+    box-shadow: ${props => 
+        props.isX 
+            ? '0 8px 24px rgba(231, 76, 60, 0.12), inset 0 0 0 1px rgba(231, 76, 60, 0.15)'
+            : '0 8px 24px rgba(52, 152, 219, 0.12), inset 0 0 0 1px rgba(52, 152, 219, 0.15)'
+    };
+    transform-style: preserve-3d;
+    transform: perspective(1000px) rotateX(5deg);
+    transition: transform 0.2s ease-out;
+    will-change: transform;
+    animation: symbolFloat 3s ease-in-out infinite;
 
-    &::before {
-        content: ${props => props.isMyTurn ? '"⚔️"' : '"🛡️"'};
-        position: absolute;
-        font-size: 20px;
-        bottom: -8px;
-        right: -8px;
-        filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
-        animation: ${props => props.isMyTurn ? 'swordFloat' : 'shieldFloat'} 3s infinite ease-in-out;
+    @keyframes symbolFloat {
+        0%, 100% {
+            transform: perspective(1000px) rotateX(5deg) translateY(0);
+        }
+        50% {
+            transform: perspective(1000px) rotateX(5deg) translateY(-4px);
+        }
     }
 
-    @keyframes swordFloat {
-        0%, 100% { transform: translate(0, 0) rotate(-5deg); }
-        50% { transform: translate(-1px, -1px) rotate(5deg); }
-    }
-
-    @keyframes shieldFloat {
-        0%, 100% { transform: translate(0, 0) scale(1); }
-        50% { transform: translate(-1px, -1px) scale(1.1); }
+    &:hover {
+        transform: perspective(1000px) rotateX(-5deg) scale(1.05);
     }
 `;
 
 const PlayerName = styled.div<{ isActive?: boolean }>`
     font-size: 18px;
-    font-weight: 600;
-    color: ${props => props.isActive ? '#ffffff' : '#4a5568'};
+    font-weight: 500;
+    font-family: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
+    color: ${props => props.isActive ? '#1e293b' : '#64748b'};
     margin-bottom: 8px;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    transition: all 0.3s ease;
+    letter-spacing: -0.02em;
+    
+    &:hover {
+        color: ${props => props.isActive ? '#0f172a' : '#475569'};
+        transform: translateY(-1px);
+    }
 `;
 
 const PlayerLabel = styled.div<{ isActive?: boolean }>`
-    font-size: 14px;
-    color: ${props => props.isActive ? 'rgba(255,255,255,0.9)' : '#718096'};
+    font-size: 13px;
+    font-family: 'Outfit', 'Inter', system-ui, sans-serif;
+    color: ${props => props.isActive ? '#3b82f6' : '#94a3b8'};
     margin-bottom: 16px;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.1em;
+    font-weight: 500;
+    opacity: 0.9;
+    transition: all 0.3s ease;
+    
+    &:hover {
+        opacity: 1;
+        letter-spacing: 0.12em;
+    }
 `;
 
 const PlayerStatus = styled.div<{ isActive?: boolean }>`
-    font-size: 15px;
-    padding: 8px 16px;
-    background: ${props => props.isActive ? 'rgba(255,255,255,0.2)' : '#f1f5f9'};
-    color: ${props => props.isActive ? '#ffffff' : '#64748b'};
-    border-radius: 20px;
+    font-size: 14px;
+    font-family: 'Be Vietnam Pro', 'Inter', system-ui, sans-serif;
+    padding: 10px 20px;
+    background: ${props => props.isActive 
+        ? 'linear-gradient(135deg, rgba(59, 130, 246, 0.08), rgba(37, 99, 235, 0.08))'
+        : 'linear-gradient(135deg, rgba(241, 245, 249, 0.6), rgba(248, 250, 252, 0.6))'
+    };
+    color: ${props => props.isActive ? '#2563eb' : '#64748b'};
+    border-radius: 12px;
     display: inline-flex;
     align-items: center;
     gap: 8px;
     margin-top: auto;
+    backdrop-filter: blur(8px);
+    box-shadow: ${props => props.isActive 
+        ? 'inset 0 0 0 1px rgba(59, 130, 246, 0.15), 0 2px 8px rgba(59, 130, 246, 0.08)'
+        : 'inset 0 0 0 1px rgba(241, 245, 249, 0.15), 0 2px 8px rgba(0, 0, 0, 0.02)'
+    };
+    font-weight: 400;
+    transition: all 0.3s ease;
+
+    &:hover {
+        transform: translateY(-2px);
+        box-shadow: ${props => props.isActive 
+            ? 'inset 0 0 0 1px rgba(59, 130, 246, 0.2), 0 4px 12px rgba(59, 130, 246, 0.12)'
+            : 'inset 0 0 0 1px rgba(241, 245, 249, 0.2), 0 4px 12px rgba(0, 0, 0, 0.04)'
+        };
+    }
 
     .waiting {
         display: inline-block;
-        animation: rotate 2s infinite linear;
+        animation: rotateSmooth 2s linear infinite;
         transform-origin: center;
+        will-change: transform;
     }
 
     .controller {
         display: inline-block;
-        animation: wiggle 1s infinite ease-in-out;
-        transform-origin: center;
+        animation: gentleFloat 2s ease-in-out infinite;
+        will-change: transform;
     }
 
-    @keyframes rotate {
+    @keyframes rotateSmooth {
         0% { transform: rotate(0deg); }
         100% { transform: rotate(360deg); }
     }
 
-    @keyframes wiggle {
-        0% { transform: translateY(-2px) rotate(-15deg); }
-        25% { transform: translateY(-2px) rotate(0deg) scale(1.1); }
-        50% { transform: translateY(-2px) rotate(15deg); }
-        75% { transform: translateY(-2px) rotate(0deg) scale(1.1); }
-        100% { transform: translateY(-2px) rotate(-15deg); }
+    @keyframes gentleFloat {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-3px); }
     }
 `;
 
@@ -311,53 +380,15 @@ const ExitButton = styled.button`
         transform: none;
     }
 
-    @keyframes drive {
+    @keyframes smoothDrive {
         0% {
-            transform: translateX(-120%) scale(0.8);
-        }
-        15% {
-            transform: translateX(-50%) scale(1);
-        }
-        75% {
-            transform: translateX(30%) scale(1);
-        }
-        100% {
-            transform: translateX(200%) scale(0.8) rotate(-5deg);
-        }
-    }
-
-    @keyframes bounce {
-        0%, 100% {
-            transform: translateY(0) rotate(-1deg);
+            transform: translateX(-100%) scale(0.9);
         }
         50% {
-            transform: translateY(-2px) rotate(1deg);
-        }
-    }
-
-    @keyframes smoke {
-        0% {
-            transform: translate(0, 0) scale(1);
-            opacity: 0.8;
-            filter: blur(2px);
+            transform: translateX(0) scale(1);
         }
         100% {
-            transform: translate(-15px, -10px) scale(0);
-            opacity: 0;
-            filter: blur(4px);
-        }
-    }
-
-    @keyframes flame {
-        0% {
-            transform: scaleX(1);
-            opacity: 0.9;
-            filter: blur(1px);
-        }
-        100% {
-            transform: scaleX(0.3);
-            opacity: 0;
-            filter: blur(2px);
+            transform: translateX(150%) scale(0.9);
         }
     }
 
@@ -376,7 +407,8 @@ const ExitButton = styled.button`
         position: relative;
         width: 40px;
         height: 18px;
-        animation: drive 1.5s cubic-bezier(0.3, 0, 0.3, 1) infinite;
+        animation: smoothDrive 1.2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+        will-change: transform;
     }
 
     .car-body {
@@ -451,8 +483,8 @@ const ExitButton = styled.button`
         height: 6px;
         background: rgba(255, 255, 255, 0.9);
         border-radius: 50%;
-        animation: smoke 0.3s linear infinite;
-        box-shadow: 0 0 4px rgba(255,255,255,0.6);
+        animation: smoothSmoke 0.4s linear infinite;
+        will-change: transform, opacity;
     }
 
     .flame {
@@ -496,6 +528,17 @@ const ExitButton = styled.button`
         opacity: ${props => props.disabled ? 0 : 1};
         transition: opacity 0.3s ease;
     }
+
+    @keyframes smoothSmoke {
+        0% {
+            transform: translate(0, 0) scale(1);
+            opacity: 0.8;
+        }
+        100% {
+            transform: translate(-10px, -8px) scale(0);
+            opacity: 0;
+        }
+    }
 `;
 
 const GridContainer = styled.div`
@@ -533,7 +576,7 @@ const Grid = styled.div<{ $x: number; $y: number; $scale: number }>`
     width: fit-content;
     transform: translate3d(${props => props.$x}px, ${props => props.$y}px, 0) scale(${props => props.$scale});
     will-change: transform;
-    transition: transform 0.1s ease;
+    transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1);
 `;
 
 const Cell = styled.div<{ $isWinningCell?: boolean }>`
@@ -608,6 +651,7 @@ const WinnerTitle = styled.h2<{ $isWinner: boolean }>`
     font-size: 32px;
     font-weight: 700;
     line-height: 1.2;
+    font-family: 'Space Grotesk', 'Manrope', system-ui, sans-serif;
 `;
 
 const WinnerText = styled.p<{ $isWinner: boolean }>`
@@ -615,6 +659,7 @@ const WinnerText = styled.p<{ $isWinner: boolean }>`
     margin-bottom: 30px;
     color: ${props => props.$isWinner ? '#16a34a' : '#dc2626'};
     line-height: 1.4;
+    font-family: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
 `;
 
 const PlayAgainButton = styled.button`
@@ -759,120 +804,124 @@ export const Board: React.FC<BoardProps> = ({ game, currentPlayerId, onCellClick
     const amIWinner = game.winner === currentPlayerId;
 
     return (
-        <BoardContainer>
-            <GameInfo>
-                <TopBar>
-                    <RoomTitle>
-                        Phòng: {game.roomName}
-                        <div className="shimmer"></div>
-                    </RoomTitle>
-                    <ExitButton onClick={handleExit} disabled={isExiting}>
-                        {isExiting ? (
-                            <>
-                                <span className="car-container">
-                                    <div className="car">
-                                        <div className="car-body">
-                                            <div className="wheel front"></div>
-                                            <div className="wheel back"></div>
+        <GlobalStyle>
+            <BoardContainer>
+                <GameInfo>
+                    <TopBar>
+                        <RoomTitle>
+                            Phòng: {game.roomName}
+                            <div className="shimmer"></div>
+                        </RoomTitle>
+                        <ExitButton onClick={handleExit} disabled={isExiting}>
+                            {isExiting ? (
+                                <>
+                                    <span className="car-container">
+                                        <div className="car">
+                                            <div className="car-body">
+                                                <div className="wheel front"></div>
+                                                <div className="wheel back"></div>
+                                            </div>
+                                            <div className="flame"></div>
+                                            <div className="smoke"></div>
+                                            <div className="wind-line"></div>
+                                            <div className="wind-line"></div>
+                                            <div className="wind-line"></div>
                                         </div>
-                                        <div className="flame"></div>
-                                        <div className="smoke"></div>
-                                        <div className="wind-line"></div>
-                                        <div className="wind-line"></div>
-                                        <div className="wind-line"></div>
-                                    </div>
+                                    </span>
+                                    <span style={{ opacity: 0 }}>
+                                        {game.status === "Finished" ? 'Đang tải lại...' : 'Đang thoát...'}
+                                    </span>
+                                </>
+                            ) : (
+                                <span className="exit-text">
+                                    {game.status === "Finished" ? 'Chơi lại' : 'Thoát phòng'}
                                 </span>
-                                <span style={{ opacity: 0 }}>
-                                    {game.status === "Finished" ? 'Đang tải lại...' : 'Đang thoát...'}
-                                </span>
-                            </>
-                        ) : (
-                            <span className="exit-text">
-                                {game.status === "Finished" ? 'Chơi lại' : 'Thoát phòng'}
-                            </span>
-                        )}
-                    </ExitButton>
-                </TopBar>
-                <PlayersContainer>
-                    <PlayerCard 
-                        isCurrentPlayer={isPlayer1} 
-                        isWinner={game.winner === game.player1Id}
-                    >
-                        <PlayerSymbol isX={true} isMyTurn={isPlayer1 && isMyTurn}>X</PlayerSymbol>
-                        <PlayerLabel isActive={isPlayer1 || game.winner === game.player1Id}>
-                            Người chơi 1
-                        </PlayerLabel>
-                        <PlayerName isActive={isPlayer1 || game.winner === game.player1Id}>
-                            {game.player1Name} {isPlayer1 && '(Bạn)'}
-                        </PlayerName>
-                        {game.status === "InProgress" && isPlayer1 && (
-                            <PlayerStatus isActive={true}>
-                                {isMyTurn ? <><span className="controller">🎮</span> Đến lượt bạn</> : <><span className="waiting">⌛</span> Chờ đối thủ</>}
-                            </PlayerStatus>
-                        )}
-                    </PlayerCard>
+                            )}
+                        </ExitButton>
+                    </TopBar>
+                    <PlayersContainer>
+                        <PlayerCard 
+                            isCurrentPlayer={isPlayer1} 
+                            isWinner={game.winner === game.player1Id}
+                            isCurrentTurn={game.currentTurn === game.player1Id}
+                        >
+                            <PlayerSymbol isX={true}>X</PlayerSymbol>
+                            <PlayerLabel isActive={isPlayer1 || game.winner === game.player1Id}>
+                                Người chơi 1
+                            </PlayerLabel>
+                            <PlayerName isActive={isPlayer1 || game.winner === game.player1Id}>
+                                {game.player1Name} {isPlayer1 && '(Bạn)'}
+                            </PlayerName>
+                            {game.status === "InProgress" && isPlayer1 && (
+                                <PlayerStatus isActive={true}>
+                                    {isMyTurn ? <><span className="controller">🎮</span> Đến lượt bạn</> : <><span className="waiting">⌛</span> Chờ đối thủ</>}
+                                </PlayerStatus>
+                            )}
+                        </PlayerCard>
 
-                    <PlayerCard 
-                        isCurrentPlayer={!isPlayer1} 
-                        isWinner={game.winner === game.player2Id}
+                        <PlayerCard 
+                            isCurrentPlayer={!isPlayer1} 
+                            isWinner={game.winner === game.player2Id}
+                            isCurrentTurn={game.currentTurn === game.player2Id}
+                        >
+                            <PlayerSymbol isX={false}>O</PlayerSymbol>
+                            <PlayerLabel isActive={!isPlayer1 || game.winner === game.player2Id}>
+                                Người chơi 2
+                            </PlayerLabel>
+                            {game.player2Name ? (
+                                <>
+                                    <PlayerName isActive={!isPlayer1 || game.winner === game.player2Id}>
+                                        {game.player2Name} {!isPlayer1 && '(Bạn)'}
+                                    </PlayerName>
+                                    {game.status === "InProgress" && !isPlayer1 && (
+                                        <PlayerStatus isActive={true}>
+                                            {isMyTurn ? <><span className="controller">🎮</span> Đến lượt bạn</> : <><span className="waiting">⌛</span> Chờ đối thủ</>}
+                                        </PlayerStatus>
+                                    )}
+                                </>
+                            ) : (
+                                <PlayerStatus>
+                                    <span className="waiting">⌛</span> 
+                                    Đang chờ người chơi...
+                                </PlayerStatus>
+                            )}
+                        </PlayerCard>
+                    </PlayersContainer>
+                </GameInfo>
+                <GridContainer>
+                    <GridScroller
+                        ref={gridRef}
+                        $isDragging={isDragging}
+                        onMouseDown={handleMouseDown}
+                        onMouseMove={handleMouseMove}
+                        onMouseUp={handleMouseUp}
+                        onMouseLeave={handleMouseUp}
+                        onWheel={handleWheel}
                     >
-                        <PlayerSymbol isX={false} isMyTurn={!isPlayer1 && isMyTurn}>O</PlayerSymbol>
-                        <PlayerLabel isActive={!isPlayer1 || game.winner === game.player2Id}>
-                            Người chơi 2
-                        </PlayerLabel>
-                        {game.player2Name ? (
-                            <>
-                                <PlayerName isActive={!isPlayer1 || game.winner === game.player2Id}>
-                                    {game.player2Name} {!isPlayer1 && '(Bạn)'}
-                                </PlayerName>
-                                {game.status === "InProgress" && !isPlayer1 && (
-                                    <PlayerStatus isActive={true}>
-                                        {isMyTurn ? <><span className="controller">🎮</span> Đến lượt bạn</> : <><span className="waiting">⌛</span> Chờ đối thủ</>}
-                                    </PlayerStatus>
-                                )}
-                            </>
-                        ) : (
-                            <PlayerStatus>
-                                <span className="waiting">⌛</span> 
-                                Đang chờ người chơi...
-                            </PlayerStatus>
-                        )}
-                    </PlayerCard>
-                </PlayersContainer>
-            </GameInfo>
-            <GridContainer>
-                <GridScroller
-                    ref={gridRef}
-                    $isDragging={isDragging}
-                    onMouseDown={handleMouseDown}
-                    onMouseMove={handleMouseMove}
-                    onMouseUp={handleMouseUp}
-                    onMouseLeave={handleMouseUp}
-                    onWheel={handleWheel}
-                >
-                    <Grid $x={position.x} $y={position.y} $scale={scale}>
-                        {Array(2500).fill(null).map((_, index) => renderCell(index))}
-                    </Grid>
-                </GridScroller>
-            </GridContainer>
+                        <Grid $x={position.x} $y={position.y} $scale={scale}>
+                            {Array(2500).fill(null).map((_, index) => renderCell(index))}
+                        </Grid>
+                    </GridScroller>
+                </GridContainer>
 
-            {game.status === "Finished" && game.winner && (
-                <WinnerModal>
-                    <WinnerContent>
-                        <WinnerTitle $isWinner={amIWinner}>
-                            {amIWinner ? '🎉 Chúc mừng! 🎉' : '😢 Thua cuộc! 😢'}
-                        </WinnerTitle>
-                        <WinnerText $isWinner={amIWinner}>
-                            {amIWinner 
-                                ? "Bạn đã chiến thắng một thằng thua cuộc!" 
-                                : `${getWinnerName()} đã chiến thắng rồi thằng thua cuộc!`}
-                        </WinnerText>
-                        <PlayAgainButton onClick={onExitRoom}>
-                            Chơi lại
-                        </PlayAgainButton>
-                    </WinnerContent>
-                </WinnerModal>
-            )}
-        </BoardContainer>
+                {game.status === "Finished" && game.winner && (
+                    <WinnerModal>
+                        <WinnerContent>
+                            <WinnerTitle $isWinner={amIWinner}>
+                                {amIWinner ? '🎉 Chúc mừng! 🎉' : '😢 Thua cuộc! 😢'}
+                            </WinnerTitle>
+                            <WinnerText $isWinner={amIWinner}>
+                                {amIWinner 
+                                    ? "Bạn đã chiến thắng một thằng thua cuộc!" 
+                                    : `${getWinnerName()} đã chiến thắng rồi thằng thua cuộc!`}
+                            </WinnerText>
+                            <PlayAgainButton onClick={onExitRoom}>
+                                Chơi lại
+                            </PlayAgainButton>
+                        </WinnerContent>
+                    </WinnerModal>
+                )}
+            </BoardContainer>
+        </GlobalStyle>
     );
 }; 

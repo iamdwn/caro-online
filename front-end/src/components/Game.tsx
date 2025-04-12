@@ -7,123 +7,211 @@ import { Board as GameBoard } from './Board';
 import { HistoryBoard } from './HistoryBoard';
 
 const GameContainer = styled.div`
-    max-width: 800px;
-    margin: 0 auto;
-    padding: 20px;
+    min-height: 100vh;
+    padding: 40px 20px;
+    background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
 `;
 
 const JoinGameForm = styled.div`
-    margin-bottom: 20px;
-    padding: 20px;
-    background-color: #f5f5f5;
-    border-radius: 5px;
+    max-width: 800px;
+    margin: 0 auto 40px;
+    padding: 32px;
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 24px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    position: relative;
 `;
 
 const Input = styled.input`
-    padding: 8px;
-    margin-right: 10px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
+    flex: 1;
+    padding: 14px 20px;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    font-size: 15px;
+    color: #1e293b;
+    background: white;
+    transition: all 0.2s ease;
+    font-family: inherit;
+    z-index: 1;
+
+    &:focus {
+        outline: none;
+        border-color: #60a5fa;
+        box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.2);
+    }
+
+    &::placeholder {
+        color: #94a3b8;
+    }
 `;
 
 const Button = styled.button`
-    padding: 8px 16px;
-    background-color: #3498db;
+    padding: 14px 24px;
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
     color: white;
     border: none;
-    border-radius: 4px;
+    border-radius: 12px;
     cursor: pointer;
-    margin-right: 10px;
+    font-weight: 600;
+    font-size: 15px;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: inherit;
+    z-index: 1;
 
     &:hover {
-        background-color: #2980b9;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+    }
+
+    &:active {
+        transform: translateY(0);
     }
 `;
 
 const RoomListContainer = styled.div`
-    display: flex;
-    gap: 20px;
-    margin-top: 20px;
-    flex-wrap: wrap;
+    max-width: 800px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 24px;
 `;
 
 const RoomList = styled.div`
-    flex: 1;
-    min-width: 300px;
-    background: #fff;
-    padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    background: rgba(255, 255, 255, 0.95);
+    padding: 32px;
+    border-radius: 24px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    position: relative;
 `;
 
 const RoomListTitle = styled.h3`
-    margin-bottom: 15px;
-    color: #2c3e50;
-    font-size: 18px;
+    margin: 0 0 24px;
+    color: #1e293b;
+    font-size: 20px;
+    font-weight: 600;
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 12px;
+    position: relative;
+    z-index: 1;
+
+    &::after {
+        content: '';
+        position: absolute;
+        left: 0;
+        bottom: -8px;
+        width: 40px;
+        height: 3px;
+        background: linear-gradient(90deg, #3b82f6, #2563eb);
+        border-radius: 3px;
+    }
 
     svg {
-        width: 20px;
-        height: 20px;
+        width: 24px;
+        height: 24px;
+        color: #3b82f6;
     }
 `;
 
 const RoomItem = styled.div`
-    padding: 12px;
-    border: 1px solid #e1e1e1;
-    border-radius: 4px;
-    margin-bottom: 10px;
+    padding: 20px;
+    border-radius: 16px;
+    margin-bottom: 16px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background: #f8f9fa;
+    background: white;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
     transition: all 0.3s ease;
+    border: 1px solid #e2e8f0;
+    cursor: pointer;
+    z-index: 1;
 
     &:hover {
-        background: #e9ecef;
         transform: translateY(-2px);
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.06);
+        border-color: #60a5fa;
+    }
+
+    &:last-child {
+        margin-bottom: 0;
     }
 `;
 
 const RoomInfo = styled.div`
     flex: 1;
+    margin-right: 16px;
+    z-index: 1;
 `;
 
 const RoomName = styled.div`
-    font-weight: bold;
-    color: #2c3e50;
+    font-weight: 600;
+    color: #1e293b;
+    font-size: 16px;
+    margin-bottom: 4px;
 `;
 
 const PlayerName = styled.div`
-    color: #666;
+    color: #64748b;
     font-size: 14px;
-    margin-top: 4px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+
+    &::before {
+        content: '👤';
+        font-size: 14px;
+    }
 `;
 
 const JoinButton = styled.button`
-    padding: 6px 12px;
-    background-color: #3498db;
+    padding: 10px 16px;
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
     color: white;
     border: none;
-    border-radius: 4px;
+    border-radius: 10px;
     cursor: pointer;
-    transition: background-color 0.3s;
+    font-weight: 500;
+    font-size: 14px;
+    transition: all 0.2s ease;
+    font-family: inherit;
+    z-index: 2;
 
     &:hover {
-        background-color: #2980b9;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+    }
+
+    &:active {
+        transform: translateY(0);
     }
 `;
 
 const FinishedGameInfo = styled.div`
-    color: #666;
+    color: #64748b;
     font-size: 14px;
-    margin-top: 4px;
+    margin-top: 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
     
     span.winner {
-        color: #27ae60;
-        font-weight: bold;
+        color: #10b981;
+        font-weight: 600;
+    }
+
+    &::before {
+        content: '🏆';
+        font-size: 14px;
     }
 `;
 
@@ -133,40 +221,77 @@ const Modal = styled.div`
     left: 0;
     right: 0;
     bottom: 0;
-    background-color: rgba(0, 0, 0, 0.5);
+    background: rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(8px);
     display: flex;
     justify-content: center;
     align-items: center;
     z-index: 1000;
+    animation: fadeIn 0.2s ease-out;
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+        }
+        to {
+            opacity: 1;
+        }
+    }
 `;
 
 const ModalContent = styled.div`
     background: white;
-    padding: 20px;
-    border-radius: 20px;
+    padding: 32px;
+    border-radius: 24px;
     width: 90vw;
     height: 90vh;
     max-width: 1200px;
     max-height: 800px;
     position: relative;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    animation: slideUp 0.3s ease-out;
+
+    @keyframes slideUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
 `;
 
 const CloseButton = styled.button`
     position: absolute;
-    top: 10px;
-    right: 10px;
-    background: none;
-    border: none;
-    font-size: 24px;
+    top: 24px;
+    right: 24px;
+    background: white;
+    border: 1px solid #e2e8f0;
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     cursor: pointer;
-    color: #666;
+    color: #64748b;
+    transition: all 0.2s ease;
+    font-size: 20px;
     
     &:hover {
-        color: #000;
+        color: #1e293b;
+        border-color: #94a3b8;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    }
+
+    &:active {
+        transform: translateY(0);
     }
 `;
 
@@ -410,8 +535,17 @@ const GameReplayBoard = styled.div`
     touch-action: none;
     background: #f8fafc;
     margin: 20px;
-    border-radius: 8px;
+    border-radius: 12px;
     box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
+    
+    &::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(248, 250, 252, 0.9));
+        backdrop-filter: blur(8px);
+        z-index: 0;
+    }
 `;
 
 interface GameGridProps {
@@ -425,59 +559,76 @@ const GameGrid = styled.div<GameGridProps>`
     grid-template-columns: repeat(50, 35px);
     grid-template-rows: repeat(50, 35px);
     gap: 1px;
-    background-color: #e2e8f0;
+    background: #e2e8f0;
     transform: translate3d(${props => props.$x}px, ${props => props.$y}px, 0) scale(${props => props.$scale});
     will-change: transform;
-    transition: transform 0.1s ease;
+    transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1);
     position: absolute;
     border: 1px solid #e2e8f0;
+    border-radius: 4px;
+    overflow: hidden;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
 `;
 
 const GameCell = styled.div<{ value: number }>`
     width: 35px;
     height: 35px;
-    background-color: ${props => {
-        switch (props.value) {
-            case 1: return '#ffebee';
-            case 2: return '#e3f2fd';
-            default: return 'white';
-        }
-    }};
+    background-color: white;
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 24px;
-    font-weight: bold;
+    font-weight: 600;
     color: ${props => {
         switch (props.value) {
-            case 1: return '#f44336';
-            case 2: return '#2196f3';
+            case 1: return '#ef4444';
+            case 2: return '#3b82f6';
             default: return 'transparent';
         }
     }};
-    border: 2px solid ${props => {
-        switch (props.value) {
-            case 1: return '#ef9a9a';
-            case 2: return '#90caf9';
-            default: return '#e2e8f0';
-        }
-    }};
+    border: 1px solid #e2e8f0;
     position: relative;
     transition: all 0.2s ease;
 
-    &:after {
+    &::before {
+        content: ${props => {
+            switch (props.value) {
+                case 1: return '"X"';
+                case 2: return '"O"';
+                default: return '""';
+            }
+        }};
+        position: absolute;
+        font-size: 24px;
+        font-weight: 600;
+        color: inherit;
+        text-shadow: ${props => {
+            switch (props.value) {
+                case 1: return '0 2px 4px rgba(239, 68, 68, 0.2)';
+                case 2: return '0 2px 4px rgba(59, 130, 246, 0.2)';
+                default: return 'none';
+            }
+        }};
+    }
+
+    &::after {
         content: '';
         position: absolute;
-        width: 100%;
-        height: 100%;
-        background-color: ${props => {
+        inset: 0;
+        border-radius: 4px;
+        background: ${props => {
             switch (props.value) {
-                case 1: return 'rgba(244, 67, 54, 0.1)';
-                case 2: return 'rgba(33, 150, 243, 0.1)';
+                case 1: return 'linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(239, 68, 68, 0.05))';
+                case 2: return 'linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(59, 130, 246, 0.05))';
                 default: return 'transparent';
             }
         }};
-        pointer-events: none;
+        opacity: 0;
+        transition: opacity 0.2s ease;
+    }
+
+    &:hover::after {
+        opacity: 1;
     }
 `;
 
@@ -494,6 +645,7 @@ const GameGridScroller = styled.div<{ $isDragging: boolean }>`
     display: flex;
     align-items: center;
     justify-content: center;
+    z-index: 1;
 `;
 
 export const Game: React.FC = () => {

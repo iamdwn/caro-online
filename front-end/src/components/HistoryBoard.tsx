@@ -41,54 +41,78 @@ const GameGrid = styled.div<GameGridProps>`
     position: relative;
 `;
 
-const GameCell = styled.div<{ value: number }>`
+const Cell = styled.div<{ value: number }>`
     width: 35px;
     height: 35px;
-    background: ${props => {
-        switch (props.value) {
-            case 1: return '#ffffff';
-            case 2: return '#ffffff';
-            default: return '#ffffff';
-        }
-    }};
+    background: white;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 26px;
-    font-weight: 600;
+    font-size: 24px;
+    font-weight: 500;
     color: ${props => {
         switch (props.value) {
-            case 1: return '#e74c3c';
-            case 2: return '#3498db';
+            case 1: return '#ef4444';
+            case 2: return '#3b82f6';
             default: return 'transparent';
         }
     }};
-    position: relative;
     border: 1px solid #e2e8f0;
+    position: relative;
+    transition: all 0.2s ease;
 
     &::before {
         content: ${props => {
             switch (props.value) {
-                case 1: return '"×"';
-                case 2: return '"○"';
+                case 1: return '"X"';
+                case 2: return '"O"';
                 default: return '""';
             }
         }};
         position: absolute;
-        font-size: 28px;
-        font-weight: 700;
-        opacity: ${props => props.value ? 1 : 0};
-        transform: scale(${props => props.value ? 1 : 0.5});
-        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        font-size: 24px;
+        font-weight: 500;
+        color: inherit;
+        text-shadow: ${props => {
+            switch (props.value) {
+                case 1: return '0 2px 4px rgba(239, 68, 68, 0.2)';
+                case 2: return '0 2px 4px rgba(59, 130, 246, 0.2)';
+                default: return 'none';
+            }
+        }};
     }
 
-    &:nth-child(50n) {
-        border-right: none;
+    &::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        border-radius: 4px;
+        background: ${props => {
+            switch (props.value) {
+                case 1: return 'linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(239, 68, 68, 0.05))';
+                case 2: return 'linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(59, 130, 246, 0.05))';
+                default: return 'transparent';
+            }
+        }};
+        opacity: 0;
+        transition: opacity 0.2s ease;
     }
 
-    &:nth-child(n+2451) {
-        border-bottom: none;
+    &:hover::after {
+        opacity: 1;
     }
+`;
+
+const Grid = styled.div`
+    display: grid;
+    grid-template-columns: repeat(50, 35px);
+    grid-template-rows: repeat(50, 35px);
+    gap: 1px;
+    background: #e2e8f0;
+    border: 1px solid #e2e8f0;
+    border-radius: 4px;
+    overflow: hidden;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
 `;
 
 interface HistoryBoardProps {
@@ -213,7 +237,7 @@ export const HistoryBoard: React.FC<HistoryBoardProps> = ({ game }) => {
                     $scale={scale}
                 >
                     {Array.from({ length: 2500 }).map((_, index) => (
-                        <GameCell
+                        <Cell
                             key={index}
                             value={boardData[index] || 0}
                         />

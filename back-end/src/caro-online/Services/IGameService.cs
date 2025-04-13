@@ -6,8 +6,8 @@ namespace caro_online.Services
 {
     public interface IGameService
     {
-        Task<Game> CreateGame(string playerName, string roomName, string userId);
-        Task<Game> JoinGame(string roomName, string playerName, string userId);
+        Task<Game> CreateGame(string playerName, string roomName, string userId, string password = "");
+        Task<Game> JoinGame(string roomName, string playerName, string userId, string password = "");
         Task<IEnumerable<Game>> GetAvailableRooms();
         Task DeleteRoom(string roomName);
         IEnumerable<Game> GetFinishedGames();

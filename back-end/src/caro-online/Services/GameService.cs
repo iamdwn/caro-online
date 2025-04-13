@@ -38,7 +38,7 @@ namespace caro_online.Services
             }
         }
 
-        public async Task<Game> CreateGame(string playerName, string roomName, string userId)
+        public async Task<Game> CreateGame(string playerName, string roomName, string userId, string password = "")
         {
             if (string.IsNullOrEmpty(playerName) || string.IsNullOrEmpty(roomName))
             {
@@ -70,7 +70,9 @@ namespace caro_online.Services
                     Player1Name = playerName,
                     Status = "Waiting",
                     Board = new int[50 * 50],
-                    CreatedAt = DateTime.UtcNow
+                    CreatedAt = DateTime.UtcNow,
+                    Password = password,
+                    HasPassword = !string.IsNullOrEmpty(password)
                 };
 
                 if (!_games.TryAdd(roomName, game))
@@ -85,7 +87,7 @@ namespace caro_online.Services
             return game;
         }
 
-        public async Task<Game> JoinGame(string roomName, string playerName, string userId)
+        public async Task<Game> JoinGame(string roomName, string playerName, string userId, string password = "")
         {
             if (string.IsNullOrEmpty(playerName) || string.IsNullOrEmpty(roomName))
             {
@@ -98,6 +100,11 @@ namespace caro_online.Services
                 if (!_games.TryGetValue(roomName, out game))
                 {
                     throw new Exception("Không tìm thấy phòng");
+                }
+
+                if (game.HasPassword && game.Password != password)
+                {
+                    throw new Exception("Mật khẩu không đúng");
                 }
 
                 if (game.Player1Name == playerName && game.Player1Id == userId)

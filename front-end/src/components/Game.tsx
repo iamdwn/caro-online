@@ -19,27 +19,56 @@ const JoinGameForm = styled.div`
     max-width: 800px;
     margin: 0 auto 40px;
     padding: 32px;
-    background: rgba(255, 255, 255, 0.95);
+    background: ${props => props.theme.colors.surface};
     border-radius: 24px;
     box-shadow: 0 20px 40px rgba(0, 0, 0, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.3);
+    border: 1px solid ${props => props.theme.colors.border};
     display: flex;
-    gap: 16px;
-    align-items: center;
+    flex-direction: column;
+    gap: 20px;
     position: relative;
+
+    h2 {
+        margin: 0 0 16px;
+        color: ${props => props.theme.colors.text.primary};
+        font-size: 24px;
+        font-weight: 600;
+    }
+
+    .form-group {
+        display: flex;
+        gap: 16px;
+        align-items: flex-start;
+
+        @media (max-width: 640px) {
+            flex-direction: column;
+        }
+    }
+
+    .input-group {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+
+        label {
+            font-size: 14px;
+            font-weight: 500;
+            color: ${props => props.theme.colors.text.secondary};
+        }
+    }
 `;
 
 const Input = styled.input`
-    flex: 1;
+    width: 100%;
     padding: 14px 20px;
-    border: 1px solid #e2e8f0;
+    border: 1px solid ${props => props.theme.colors.border};
     border-radius: 12px;
     font-size: 15px;
-    color: #1e293b;
-    background: white;
+    color: ${props => props.theme.colors.text.primary};
+    background: ${props => props.theme.colors.surface};
     transition: all 0.2s ease;
     font-family: inherit;
-    z-index: 1;
 
     &:focus {
         outline: none;
@@ -48,7 +77,8 @@ const Input = styled.input`
     }
 
     &::placeholder {
-        color: #94a3b8;
+        color: ${props => props.theme.colors.text.secondary};
+        opacity: 0.7;
     }
 `;
 
@@ -75,6 +105,16 @@ const Button = styled.button`
 
     &:active {
         transform: translateY(0);
+    }
+`;
+
+const CreateButton = styled(Button)`
+    align-self: flex-end;
+    min-width: 140px;
+    justify-content: center;
+    
+    @media (max-width: 640px) {
+        align-self: stretch;
     }
 `;
 
@@ -202,6 +242,20 @@ const RoomName = styled.div`
     color: #1e293b;
     font-size: 16px;
     margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    .password-icon {
+        color: #64748b;
+        font-size: 14px;
+        display: flex;
+        align-items: center;
+        
+        &::before {
+            content: '🔒';
+        }
+    }
 `;
 
 const PlayerName = styled.div`
@@ -901,6 +955,114 @@ const lightTheme = {
     }
 };
 
+const CreateRoomButton = styled(Button)`
+    margin-bottom: 20px;
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+    border: none;
+    padding: 16px 32px;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    
+    &::before {
+        content: '🎮';
+        font-size: 20px;
+    }
+
+    &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 16px rgba(37, 99, 235, 0.2);
+    }
+`;
+
+const CreateRoomModal = styled(Modal)`
+    .modal-content {
+        max-width: 600px;
+        max-height: 400px;
+        padding: 32px;
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+        animation: slideUp 0.3s ease-out;
+    }
+
+    h2 {
+        margin: 0;
+        color: ${props => props.theme.colors.text.primary};
+        font-size: 24px;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+
+        &::before {
+            content: '🎮';
+            font-size: 28px;
+        }
+    }
+
+    .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    .input-group {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+
+        label {
+            font-size: 14px;
+            font-weight: 500;
+            color: ${props => props.theme.colors.text.secondary};
+        }
+    }
+
+    .buttons {
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
+        margin-top: 8px;
+    }
+`;
+
+const CancelButton = styled(Button)`
+    background: ${props => props.theme.colors.surface};
+    color: ${props => props.theme.colors.text.primary};
+    border: 1px solid ${props => props.theme.colors.border};
+    
+    &:hover {
+        background: ${props => props.theme.colors.border};
+    }
+`;
+
+const PasswordDialog = styled(Modal)`
+    .modal-content {
+        max-width: 400px;
+        max-height: 250px;
+        padding: 24px;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    h3 {
+        margin: 0;
+        font-size: 20px;
+        color: ${props => props.theme.colors.text.primary};
+        display: flex;
+        align-items: center;
+        gap: 8px;
+
+        &::before {
+            content: '🔒';
+            font-size: 24px;
+        }
+    }
+`;
+
 export const Game: React.FC = () => {
     const [tabId] = useState(() => Math.random().toString(36).substring(7));
     const [userId] = useState(() => localStorage.getItem('userId') || Math.random().toString(36).substring(7));
@@ -935,6 +1097,14 @@ export const Game: React.FC = () => {
         const savedTheme = localStorage.getItem('theme');
         return savedTheme === 'dark' ? darkTheme : lightTheme;
     });
+    const [password, setPassword] = useState('');
+    const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+    const [showPasswordDialog, setShowPasswordDialog] = useState(false);
+    const [selectedRoomForPassword, setSelectedRoomForPassword] = useState<{
+        roomName: string;
+        action: 'join' | 'view';
+    } | null>(null);
+    const [passwordInput, setPasswordInput] = useState('');
 
     useEffect(() => {
         localStorage.setItem('userId', userId);
@@ -1120,8 +1290,10 @@ export const Game: React.FC = () => {
 
         try {
             setIsCreating(true);
-            await gameService.createGame(playerName, roomName, userId);
+            await gameService.createGame(playerName, roomName, userId, password);
             setRoomName('');
+            setPassword('');
+            setIsCreateModalOpen(false);
         } catch (error) {
             console.error('Create game error:', error);
             gameService.showError('Không thể tạo game');
@@ -1129,14 +1301,14 @@ export const Game: React.FC = () => {
         }
     };
 
-    const handleJoinGame = async (roomName: string) => {
+    const handleJoinGame = async (roomName: string, password: string = "") => {
         if (!playerName) {
             gameService.showError('Vui lòng nhập tên người chơi');
             return;
         }
         try {
             setIsJoining(true);
-            await gameService.joinGame(roomName, playerName, userId);
+            await gameService.joinGame(roomName, playerName, userId, password);
         } catch (error) {
             console.error('Join game error:', error);
             gameService.showError('Không thể tham gia game');
@@ -1483,14 +1655,57 @@ export const Game: React.FC = () => {
         localStorage.setItem('theme', newTheme.mode);
     };
 
-    const handleViewLiveGame = async (room: GameType) => {
+    const handleViewLiveGame = async (room: GameType, password: string = "") => {
         try {
-            setCurrentGame(room);
+            if (room.hasPassword && !password) {
+                setSelectedRoomForPassword({
+                    roomName: room.roomName,
+                    action: 'view'
+                });
+                setShowPasswordDialog(true);
+                return;
+            }
+
+            const game = await gameService.joinGame(room.roomName, playerName, userId, password);
+            setCurrentGame(game);
             setCurrentPlayerId(null);
-            localStorage.setItem(`currentGame_${tabId}`, JSON.stringify(room));
+            localStorage.setItem(`currentGame_${tabId}`, JSON.stringify(game));
         } catch (error) {
             console.error('View live game error:', error);
             gameService.showError('Không thể xem trận đấu');
+        }
+    };
+
+    const handlePasswordSubmit = async () => {
+        if (!selectedRoomForPassword) return;
+
+        try {
+            if (selectedRoomForPassword.action === 'join') {
+                await handleJoinGame(selectedRoomForPassword.roomName, passwordInput);
+            } else {
+                const room = availableRooms.find(r => r.roomName === selectedRoomForPassword.roomName);
+                if (room) {
+                    await handleViewLiveGame(room, passwordInput);
+                }
+            }
+            setShowPasswordDialog(false);
+            setPasswordInput('');
+            setSelectedRoomForPassword(null);
+        } catch (error) {
+            console.error('Password error:', error);
+            gameService.showError('Mật khẩu không đúng');
+        }
+    };
+
+    const initiateJoinGame = (room: GameType) => {
+        if (room.hasPassword) {
+            setSelectedRoomForPassword({
+                roomName: room.roomName,
+                action: 'join'
+            });
+            setShowPasswordDialog(true);
+        } else {
+            handleJoinGame(room.roomName);
         }
     };
 
@@ -1521,23 +1736,59 @@ export const Game: React.FC = () => {
                 </ThemeToggle>
                 {!currentGame && !selectedGame && (
                     <>
-                        <JoinGameForm>
-                            <Input
-                                type="text"
-                                placeholder="Nhập tên của bạn"
-                                value={playerName}
-                                onChange={(e) => setPlayerName(e.target.value)}
-                            />
-                            <Input
-                                type="text"
-                                placeholder="Nhập tên phòng"
-                                value={roomName}
-                                onChange={(e) => setRoomName(e.target.value)}
-                            />
-                            <Button onClick={handleCreateGame} disabled={isCreating}>
-                                {isCreating ? 'Đang tạo...' : 'Tạo phòng'}
-                            </Button>
-                        </JoinGameForm>
+                        <CreateRoomButton onClick={() => setIsCreateModalOpen(true)}>
+                            Tạo phòng mới
+                        </CreateRoomButton>
+
+                        {isCreateModalOpen && (
+                            <CreateRoomModal>
+                                <div className="modal-content">
+                                    <h2>Tạo phòng mới</h2>
+                                    <div className="form-group">
+                                        <div className="input-group">
+                                            <label>Tên người chơi</label>
+                                            <Input
+                                                type="text"
+                                                placeholder="Nhập tên của bạn"
+                                                value={playerName}
+                                                onChange={(e) => setPlayerName(e.target.value)}
+                                            />
+                                        </div>
+                                        <div className="input-group">
+                                            <label>Tên phòng</label>
+                                            <Input
+                                                type="text"
+                                                placeholder="Nhập tên phòng"
+                                                value={roomName}
+                                                onChange={(e) => setRoomName(e.target.value)}
+                                            />
+                                        </div>
+                                        <div className="input-group">
+                                            <label>Mật khẩu (không bắt buộc)</label>
+                                            <Input
+                                                type="password"
+                                                placeholder="Nhập mật khẩu (không bắt buộc)"
+                                                value={password}
+                                                onChange={(e) => setPassword(e.target.value)}
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="buttons">
+                                        <CancelButton onClick={() => setIsCreateModalOpen(false)}>
+                                            Hủy
+                                        </CancelButton>
+                                        <CreateButton onClick={() => {
+                                            handleCreateGame();
+                                            if (!isCreating) {
+                                                setIsCreateModalOpen(false);
+                                            }
+                                        }} disabled={isCreating}>
+                                            {isCreating ? 'Đang tạo...' : 'Tạo phòng'}
+                                        </CreateButton>
+                                    </div>
+                                </div>
+                            </CreateRoomModal>
+                        )}
 
                         <RoomListContainer>
                             <RoomList theme={theme}>
@@ -1548,7 +1799,10 @@ export const Game: React.FC = () => {
                                 {availableRooms.map((room) => (
                                     <RoomItem key={room.id}>
                                         <RoomInfo>
-                                            <RoomName>{room.roomName}</RoomName>
+                                            <RoomName>
+                                                {room.roomName}
+                                                {room.hasPassword && <span className="password-icon" title="Phòng có mật khẩu"></span>}
+                                            </RoomName>
                                             <PlayerName>Chủ phòng: {room.player1Name}</PlayerName>
                                             {room.status === "InProgress" && (
                                                 <PlayerName>Đối thủ: {room.player2Name}</PlayerName>
@@ -1562,7 +1816,7 @@ export const Game: React.FC = () => {
                                                 Xem trận đấu
                                             </JoinButton>
                                         ) : (
-                                            <JoinButton onClick={() => handleJoinGame(room.roomName)} disabled={isJoining}>
+                                            <JoinButton onClick={() => initiateJoinGame(room)} disabled={isJoining}>
                                                 {isJoining ? 'Đang vào...' : 'Vào phòng'}
                                             </JoinButton>
                                         )}
@@ -1690,6 +1944,33 @@ export const Game: React.FC = () => {
                             <HistoryBoard game={selectedGame} />
                         </GameReplayBoard>
                     </GameReplayContainer>
+                )}
+
+                {showPasswordDialog && (
+                    <PasswordDialog>
+                        <div className="modal-content">
+                            <h3>Nhập mật khẩu phòng</h3>
+                            <Input
+                                type="password"
+                                placeholder="Nhập mật khẩu"
+                                value={passwordInput}
+                                onChange={(e) => setPasswordInput(e.target.value)}
+                                onKeyPress={(e) => e.key === 'Enter' && handlePasswordSubmit()}
+                            />
+                            <div className="buttons">
+                                <CancelButton onClick={() => {
+                                    setShowPasswordDialog(false);
+                                    setPasswordInput('');
+                                    setSelectedRoomForPassword(null);
+                                }}>
+                                    Hủy
+                                </CancelButton>
+                                <CreateButton onClick={handlePasswordSubmit}>
+                                    Xác nhận
+                                </CreateButton>
+                            </div>
+                        </div>
+                    </PasswordDialog>
                 )}
             </GameContainer>
         </ThemeProvider>

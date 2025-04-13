@@ -21,6 +21,8 @@ namespace caro_online.Models
         public string Duration { get; set; } = string.Empty;
         public bool Player1PlayAgain { get; set; }
         public bool Player2PlayAgain { get; set; }
+        public string Password { get; set; } = string.Empty;
+        public bool HasPassword { get; set; }
 
         public int GetCell(int row, int col)
         {

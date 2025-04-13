@@ -31,11 +31,11 @@ namespace caro_online.Hubs
             await base.OnDisconnectedAsync(exception);
         }
 
-        public async Task CreateGame(string playerName, string roomName, string userId)
+        public async Task CreateGame(string playerName, string roomName, string userId, string password = "")
         {
             try
             {
-                var game = await _gameService.CreateGame(playerName, roomName, userId);
+                var game = await _gameService.CreateGame(playerName, roomName, userId, password);
                 await Clients.All.SendAsync("gameCreated", game);
 
                 var rooms = await _gameService.GetAvailableRooms();
@@ -50,11 +50,11 @@ namespace caro_online.Hubs
             }
         }
 
-        public async Task JoinGame(string roomName, string playerName, string userId)
+        public async Task JoinGame(string roomName, string playerName, string userId, string password = "")
         {
             try
             {
-                var game = await _gameService.JoinGame(roomName, playerName, userId);
+                var game = await _gameService.JoinGame(roomName, playerName, userId, password);
                 await Clients.All.SendAsync("gameJoined", game);
 
                 var rooms = await _gameService.GetAvailableRooms();

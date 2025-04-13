@@ -234,6 +234,14 @@ class GameService {
             this.errorCallback(message);
         }
     }
+
+    onViewerJoined(callback: (game: Game) => void) {
+        this.connection!.on('viewerJoined', callback);
+    }
+
+    onViewerLeft(callback: (game: Game) => void) {
+        this.connection!.on('viewerLeft', callback);
+    }
 }
 
 export const gameService = new GameService(); 

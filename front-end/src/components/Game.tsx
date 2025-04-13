@@ -1061,6 +1061,65 @@ const PasswordDialog = styled(Modal)`
             font-size: 24px;
         }
     }
+
+    .buttons {
+        display: flex;
+        gap: 12px;
+        justify-content: center;
+    }
+`;
+
+const WinnerModal = styled.div`
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+`;
+
+const WinnerContent = styled.div`
+    background: white;
+    padding: 32px;
+    border-radius: 16px;
+    text-align: center;
+    animation: slideUp 0.3s ease-out;
+`;
+
+const WinnerTitle = styled.h2<{ $isWinner: boolean }>`
+    font-size: 32px;
+    margin-bottom: 16px;
+    color: ${props => props.$isWinner ? '#10b981' : '#ef4444'};
+`;
+
+const WinnerText = styled.div<{ $isWinner: boolean }>`
+    font-size: 24px;
+    font-weight: bold;
+    color: ${props => props.$isWinner ? '#10b981' : '#ef4444'};
+    margin-bottom: 24px;
+`;
+
+const PlayAgainButton = styled(Button)`
+    font-size: 18px;
+    padding: 12px 32px;
+`;
+
+const ViewerCount = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    color: #64748b;
+    font-size: 14px;
+    margin-top: 4px;
+
+    &::before {
+        content: '👀';
+        font-size: 14px;
+    }
 `;
 
 export const Game: React.FC = () => {
@@ -1218,9 +1277,30 @@ export const Game: React.FC = () => {
                 });
 
                 gameService.onGameUpdated((game: GameType) => {
-                    if (mounted && currentGame && game.id === currentGame.id) {
-                        setCurrentGame(game);
-                        localStorage.setItem(`currentGame_${tabId}`, JSON.stringify(game));
+                    if (mounted) {
+                        if (currentGame && game.id === currentGame.id) {
+                            setCurrentGame(game);
+                            localStorage.setItem(`currentGame_${tabId}`, JSON.stringify(game));
+                        }
+                        setAvailableRooms(prev => 
+                            prev.map(room => room.id === game.id ? game : room)
+                        );
+                    }
+                });
+
+                gameService.onViewerJoined((game: GameType) => {
+                    if (mounted) {
+                        setAvailableRooms(prev => 
+                            prev.map(room => room.id === game.id ? game : room)
+                        );
+                    }
+                });
+
+                gameService.onViewerLeft((game: GameType) => {
+                    if (mounted) {
+                        setAvailableRooms(prev => 
+                            prev.map(room => room.id === game.id ? game : room)
+                        );
                     }
                 });
 
@@ -1241,6 +1321,57 @@ export const Game: React.FC = () => {
                             if (exists) return prev;
                             return [game, ...prev];
                         });
+
+                        if (currentGame?.id === game.id && !currentPlayerId) {
+                            const winnerName = game.winner === game.player1Id ? game.player1Name : game.player2Name;
+                            const loserName = game.winner === game.player1Id ? game.player2Name : game.player1Name;
+                            
+                            const modalElement = document.createElement('div');
+                            modalElement.innerHTML = `
+                                <div style="
+                                    position: fixed;
+                                    top: 0;
+                                    left: 0;
+                                    right: 0;
+                                    bottom: 0;
+                                    background: rgba(0, 0, 0, 0.5);
+                                    display: flex;
+                                    align-items: center;
+                                    justify-content: center;
+                                    z-index: 1000;
+                                ">
+                                    <div style="
+                                        background: linear-gradient(145deg, #ffffff, #f8fafc);
+                                        padding: 32px;
+                                        border-radius: 16px;
+                                        text-align: center;
+                                        animation: slideUp 0.3s ease-out;
+                                        max-width: 90%;
+                                        width: 400px;
+                                    ">
+                                        <h2 style="
+                                            font-size: 32px;
+                                            margin-bottom: 16px;
+                                            color:linear-gradient(135deg, #4ade80, #22c55e);
+                                        ">😢 Trận đấu kết thúc! 😢</h2>
+                                        <div style="
+                                            font-size: 24px;
+                                            font-weight: bold;
+                                            color:linear-gradient(135deg,rgb(22, 107, 185),rgb(6, 125, 172));
+                                            margin-bottom: 24px;
+                                        ">${winnerName} đã chiến thắng một thằng thua cuộc tên ${loserName} !</div>
+                                    </div>
+                                </div>
+                            `;
+                            document.body.appendChild(modalElement);
+
+                            setTimeout(() => {
+                                document.body.removeChild(modalElement);
+                                setCurrentGame(null);
+                                localStorage.removeItem(`currentGame_${tabId}`);
+                            }, 2000);
+                        }
+
                         setShowPasswordDialog(false);
                         setPasswordInput('');
                         setSelectedRoomForPassword(null);
@@ -1799,7 +1930,12 @@ export const Game: React.FC = () => {
                                             </RoomName>
                                             <PlayerName>Chủ phòng: {room.player1Name}</PlayerName>
                                             {room.status === "InProgress" && (
-                                                <PlayerName>Đối thủ: {room.player2Name}</PlayerName>
+                                                <>
+                                                    <PlayerName>Đối thủ: {room.player2Name}</PlayerName>
+                                                    <ViewerCount>
+                                                        {room.viewerCount || 0} người xem
+                                                    </ViewerCount>
+                                                </>
                                             )}
                                             <RoomStatus status={room.status === "InProgress" ? 'playing' : room.player1Name ? 'waiting' : 'open'}>
                                                 {room.status === "InProgress" ? 'Đang chơi' : room.player1Name ? 'Đang chờ' : 'Đang mở'}

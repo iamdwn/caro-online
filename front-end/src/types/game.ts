@@ -31,6 +31,7 @@ export interface Game {
     endedAt: string | null;
     duration: string | null;
     hasPassword?: boolean;
+    viewerCount?: number;
 }
 
 export const BOARD_SIZE = 50;

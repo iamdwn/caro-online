@@ -15,7 +15,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("caro-online")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+639c1dae4ccf1ccfc47588ac800fca64a76b97da")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+4ad9088644f47995b616de871edf6afc18256864")]
 [assembly: System.Reflection.AssemblyProductAttribute("caro-online")]
 [assembly: System.Reflection.AssemblyTitleAttribute("caro-online")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

@@ -26,7 +26,7 @@ namespace caro_online.Services
             try
             {
                 var rooms = _games.Values
-                    .Where(g => g != null && g.Status == "Waiting")
+                    .Where(g => g != null && (g.Status == "Waiting" || g.Status == "InProgress"))
                     .OrderByDescending(g => g.CreatedAt)
                     .ToList();
 
@@ -135,7 +135,7 @@ namespace caro_online.Services
             lock (_lock)
             {
                 rooms = _games.Values
-                    .Where(g => g != null && g.Status == "Waiting")
+                    .Where(g => g != null && (g.Status == "Waiting" || g.Status == "InProgress"))
                     .OrderByDescending(g => g.CreatedAt)
                     .ToList();
 
@@ -186,7 +186,9 @@ namespace caro_online.Services
                     throw new Exception("Không tìm thấy phòng");
                 }
 
-                if (game.Status == "InProgress")
+                bool isPlayer = game.Player1Id == userId || game.Player2Id == userId;
+
+                if (game.Status == "InProgress" && isPlayer)
                 {
                     if (game.Player1Id == userId)
                     {
@@ -202,8 +204,13 @@ namespace caro_online.Services
                     }
 
                     AddFinishedGame(game);
-                    _hubContext.Clients.All.SendAsync("GameUpdated", game);
                     _games.TryRemove(roomName, out _);
+                    _ = _hubContext.Clients.All.SendAsync("GameUpdated", game);
+                    _ = _hubContext.Clients.All.SendAsync("GameFinished", game);
+                }
+                else if (!isPlayer)
+                {
+                    return;
                 }
                 else
                 {
@@ -309,10 +316,11 @@ namespace caro_online.Services
                 if (maxCount >= 5)
                 {
                     game.Winner = lastPlayerId;
-                    game.Status = GameStatus.Finished.ToString();
+                    game.Status = "Finished";
                     game.EndedAt = DateTime.UtcNow;
                     AddFinishedGame(game);
-                    _hubContext.Clients.All.SendAsync("GameFinished", game);
+                    _games.TryRemove(game.RoomName, out _);
+                    _ = _hubContext.Clients.All.SendAsync("GameFinished", game);
                     return;
                 }
             }
@@ -330,9 +338,27 @@ namespace caro_online.Services
 
         public IEnumerable<Game> GetFinishedGames()
         {
-            return _finishedGames.Values
+            var games = _finishedGames.Values
                 .OrderByDescending(game => game.CreatedAt)
                 .ToList();
+            _ = BroadcastFinishedGames();
+            return games;
+        }
+
+        private async Task BroadcastFinishedGames()
+        {
+            try
+            {
+                var finishedGames = _finishedGames.Values
+                    .OrderByDescending(game => game.CreatedAt)
+                    .ToList();
+
+                await _hubContext.Clients.All.SendAsync("FinishedGames", finishedGames);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error in BroadcastFinishedGames: {ex.Message}");
+            }
         }
 
         public void AddFinishedGame(Game game)
@@ -368,6 +394,8 @@ namespace caro_online.Services
                     _finishedGames.TryRemove(oldestGame.Id, out _);
                 }
             }
+
+            _ = BroadcastFinishedGames();
         }
 
         public void DeleteGame(string gameId)
@@ -401,6 +429,7 @@ namespace caro_online.Services
             {
                 _finishedGames.TryRemove(game.Id, out _);
                 await _hubContext.Clients.All.SendAsync("BothPlayersPlayAgain", game.RoomName);
+                await BroadcastFinishedGames();
             }
         }
     }

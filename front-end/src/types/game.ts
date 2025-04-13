@@ -26,7 +26,8 @@ export interface Game {
     currentTurn?: string | null;
     winner: string | null;
     moves: Move[];
-    createdAt: Date;
+    createdAt: string;
+    finishedAt: string;
 }
 
 export const BOARD_SIZE = 50;

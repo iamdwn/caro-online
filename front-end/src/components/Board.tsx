@@ -210,6 +210,50 @@ const PlayerCard = styled.div<{ isCurrentPlayer?: boolean; isWinner?: boolean; i
     }
 `;
 
+const PlayerAvatar = styled.div<{ isHost?: boolean }>`
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: ${props => props.isHost 
+        ? 'linear-gradient(135deg, #fde047, #facc15)' 
+        : 'linear-gradient(135deg, #93c5fd, #60a5fa)'};
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 16px;
+    position: relative;
+    box-shadow: 0 4px 12px ${props => props.isHost 
+        ? 'rgba(250, 204, 21, 0.2)' 
+        : 'rgba(96, 165, 250, 0.2)'};
+
+    &::before {
+        content: '${props => props.isHost ? '👑' : '👤'}';
+        font-size: 32px;
+        animation: float 3s infinite ease-in-out;
+    }
+
+    &::after {
+        content: '';
+        position: absolute;
+        inset: -2px;
+        border-radius: 50%;
+        padding: 2px;
+        background: ${props => props.isHost 
+            ? 'linear-gradient(135deg, #fde047, #facc15)' 
+            : 'linear-gradient(135deg, #93c5fd, #60a5fa)'};
+        mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+        -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+        -webkit-mask-composite: xor;
+        mask-composite: exclude;
+        opacity: 0.5;
+    }
+
+    @keyframes float {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-5px); }
+    }
+`;
+
 const PlayerSymbol = styled.div<{ isX?: boolean }>`
     font-size: 38px;
     font-weight: 500;
@@ -684,14 +728,83 @@ const PlayAgainButton = styled.button`
     }
 `;
 
-interface BoardProps {
+const InviteButton = styled.button`
+    padding: 10px 20px;
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    font-size: 15px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.3s ease;
+    margin-left: 12px;
+
+    &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+    }
+
+    &:active {
+        transform: translateY(0);
+    }
+`;
+
+const QRCodeContainer = styled.div`
+    position: absolute;
+    top: calc(100% + 12px);
+    right: 0;
+    background: white;
+    padding: 16px;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    z-index: 1000;
+    border: 1px solid #e2e8f0;
+    animation: slideIn 0.3s ease;
+
+    @keyframes slideIn {
+        from {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .title {
+        font-size: 14px;
+        color: #64748b;
+        text-align: center;
+    }
+
+    .qr-code {
+        width: 150px;
+        height: 150px;
+        background: #f8fafc;
+        border-radius: 8px;
+        padding: 8px;
+        border: 1px solid #e2e8f0;
+    }
+`;
+
+export interface BoardProps {
     game: Game;
     currentPlayerId?: string;
     onCellClick: (row: number, col: number) => void;
     onExitRoom: () => void;
+    isSpectator?: boolean;
 }
 
-export const Board: React.FC<BoardProps> = ({ game, currentPlayerId, onCellClick, onExitRoom }) => {
+export const Board: React.FC<BoardProps> = ({ game, currentPlayerId, onCellClick, onExitRoom, isSpectator }) => {
     const [isExiting, setIsExiting] = useState(false);
     const [position, setPosition] = useState({ x: 0, y: 0 });
     const [scale, setScale] = useState(0.8);
@@ -700,6 +813,7 @@ export const Board: React.FC<BoardProps> = ({ game, currentPlayerId, onCellClick
     const gridRef = useRef<HTMLDivElement>(null);
     const isMyTurn = game.currentTurn === currentPlayerId;
     const isPlayer1 = currentPlayerId === game.player1Id;
+    const [showQR, setShowQR] = useState(false);
 
     const handleMouseDown = (e: React.MouseEvent) => {
         e.preventDefault();
@@ -803,41 +917,64 @@ export const Board: React.FC<BoardProps> = ({ game, currentPlayerId, onCellClick
 
     const amIWinner = game.winner === currentPlayerId;
 
+    const handleInvite = () => {
+        const url = window.location.href;
+        navigator.clipboard.writeText(url);
+        setShowQR(prev => !prev);
+    };
+
     return (
         <GlobalStyle>
             <BoardContainer>
                 <GameInfo>
                     <TopBar>
                         <RoomTitle>
-                            Phòng: {game.roomName}
+                            {isSpectator ? `Đang xem: ${game.roomName}` : `Phòng: ${game.roomName}`}
                             <div className="shimmer"></div>
                         </RoomTitle>
-                        <ExitButton onClick={handleExit} disabled={isExiting}>
-                            {isExiting ? (
-                                <>
-                                    <span className="car-container">
-                                        <div className="car">
-                                            <div className="car-body">
-                                                <div className="wheel front"></div>
-                                                <div className="wheel back"></div>
-                                            </div>
-                                            <div className="flame"></div>
-                                            <div className="smoke"></div>
-                                            <div className="wind-line"></div>
-                                            <div className="wind-line"></div>
-                                            <div className="wind-line"></div>
-                                        </div>
-                                    </span>
-                                    <span style={{ opacity: 0 }}>
-                                        {game.status === "Finished" ? 'Đang tải lại...' : 'Đang thoát...'}
-                                    </span>
-                                </>
-                            ) : (
-                                <span className="exit-text">
-                                    {game.status === "Finished" ? 'Chơi lại' : 'Thoát phòng'}
-                                </span>
+                        <div style={{ display: 'flex', alignItems: 'center' }}>
+                            {!isSpectator && (
+                                <InviteButton onClick={handleInvite}>
+                                    Mời bạn bè
+                                </InviteButton>
                             )}
-                        </ExitButton>
+                            {showQR && (
+                                <QRCodeContainer>
+                                    <div className="title">Quét mã QR để vào phòng</div>
+                                    <img 
+                                        className="qr-code"
+                                        src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(window.location.href)}`}
+                                        alt="QR Code"
+                                    />
+                                </QRCodeContainer>
+                            )}
+                            <ExitButton onClick={handleExit} disabled={isExiting}>
+                                {isExiting ? (
+                                    <>
+                                        <span className="car-container">
+                                            <div className="car">
+                                                <div className="car-body">
+                                                    <div className="wheel front"></div>
+                                                    <div className="wheel back"></div>
+                                                </div>
+                                                <div className="flame"></div>
+                                                <div className="smoke"></div>
+                                                <div className="wind-line"></div>
+                                                <div className="wind-line"></div>
+                                                <div className="wind-line"></div>
+                                            </div>
+                                        </span>
+                                        <span style={{ opacity: 0 }}>
+                                            {isSpectator ? 'Đang thoát...' : game.status === "Finished" ? 'Đang tải lại...' : 'Đang thoát...'}
+                                        </span>
+                                    </>
+                                ) : (
+                                    <span className="exit-text">
+                                        {isSpectator ? 'Thoát' : game.status === "Finished" ? 'Chơi lại' : 'Thoát phòng'}
+                                    </span>
+                                )}
+                            </ExitButton>
+                        </div>
                     </TopBar>
                     <PlayersContainer>
                         <PlayerCard 
@@ -845,14 +982,15 @@ export const Board: React.FC<BoardProps> = ({ game, currentPlayerId, onCellClick
                             isWinner={game.winner === game.player1Id}
                             isCurrentTurn={game.currentTurn === game.player1Id}
                         >
+                            <PlayerAvatar isHost={true} />
                             <PlayerSymbol isX={true}>X</PlayerSymbol>
                             <PlayerLabel isActive={isPlayer1 || game.winner === game.player1Id}>
                                 Người chơi 1
                             </PlayerLabel>
                             <PlayerName isActive={isPlayer1 || game.winner === game.player1Id}>
-                                {game.player1Name} {isPlayer1 && '(Bạn)'}
+                                {game.player1Name} {isPlayer1 && !isSpectator && '(Bạn)'}
                             </PlayerName>
-                            {game.status === "InProgress" && isPlayer1 && (
+                            {game.status === "InProgress" && isPlayer1 && !isSpectator && (
                                 <PlayerStatus isActive={true}>
                                     {isMyTurn ? <><span className="controller">🎮</span> Đến lượt bạn</> : <><span className="waiting">⌛</span> Chờ đối thủ</>}
                                 </PlayerStatus>
@@ -864,6 +1002,7 @@ export const Board: React.FC<BoardProps> = ({ game, currentPlayerId, onCellClick
                             isWinner={game.winner === game.player2Id}
                             isCurrentTurn={game.currentTurn === game.player2Id}
                         >
+                            <PlayerAvatar isHost={false} />
                             <PlayerSymbol isX={false}>O</PlayerSymbol>
                             <PlayerLabel isActive={!isPlayer1 || game.winner === game.player2Id}>
                                 Người chơi 2
@@ -871,9 +1010,9 @@ export const Board: React.FC<BoardProps> = ({ game, currentPlayerId, onCellClick
                             {game.player2Name ? (
                                 <>
                                     <PlayerName isActive={!isPlayer1 || game.winner === game.player2Id}>
-                                        {game.player2Name} {!isPlayer1 && '(Bạn)'}
+                                        {game.player2Name} {!isPlayer1 && !isSpectator && '(Bạn)'}
                                     </PlayerName>
-                                    {game.status === "InProgress" && !isPlayer1 && (
+                                    {game.status === "InProgress" && !isPlayer1 && !isSpectator && (
                                         <PlayerStatus isActive={true}>
                                             {isMyTurn ? <><span className="controller">🎮</span> Đến lượt bạn</> : <><span className="waiting">⌛</span> Chờ đối thủ</>}
                                         </PlayerStatus>
@@ -897,6 +1036,7 @@ export const Board: React.FC<BoardProps> = ({ game, currentPlayerId, onCellClick
                         onMouseUp={handleMouseUp}
                         onMouseLeave={handleMouseUp}
                         onWheel={handleWheel}
+                        style={{ cursor: isSpectator ? 'grab' : undefined }}
                     >
                         <Grid $x={position.x} $y={position.y} $scale={scale}>
                             {Array(2500).fill(null).map((_, index) => renderCell(index))}
@@ -904,7 +1044,7 @@ export const Board: React.FC<BoardProps> = ({ game, currentPlayerId, onCellClick
                     </GridScroller>
                 </GridContainer>
 
-                {game.status === "Finished" && game.winner && (
+                {game.status === "Finished" && game.winner && !isSpectator && (
                     <WinnerModal>
                         <WinnerContent>
                             <WinnerTitle $isWinner={amIWinner}>

@@ -1,16 +1,18 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
-import styled from 'styled-components';
+import styled, { ThemeProvider } from 'styled-components';
 import type { Game as GameType } from '../types/game';
 import { GameStatus, parseBoard, type Board, type BoardCell } from '../types/game';
 import { gameService } from '../services/gameService';
 import { Board as GameBoard } from './Board';
 import { HistoryBoard } from './HistoryBoard';
 
-const GameContainer = styled.div`
+const GameContainer = styled.div<{ theme: typeof lightTheme }>`
     min-height: 100vh;
     padding: 40px 20px;
-    background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+    background: ${props => props.theme.colors.background};
     font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+    color: ${props => props.theme.colors.text.primary};
+    transition: all 0.3s ease;
 `;
 
 const JoinGameForm = styled.div`
@@ -84,13 +86,19 @@ const RoomListContainer = styled.div`
     gap: 24px;
 `;
 
-const RoomList = styled.div`
-    background: rgba(255, 255, 255, 0.95);
+const RoomList = styled.div<{ theme: typeof lightTheme }>`
+    background: ${props => props.theme.colors.surface};
     padding: 32px;
     border-radius: 24px;
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.3);
+    box-shadow: 0 20px 40px ${props => props.theme.mode === 'dark' 
+        ? 'rgba(0, 0, 0, 0.3)' 
+        : 'rgba(0, 0, 0, 0.05)'};
+    border: 1px solid ${props => props.theme.colors.border};
     position: relative;
+
+    h3 {
+        color: ${props => props.theme.colors.text.primary};
+    }
 `;
 
 const RoomListTitle = styled.h3`
@@ -122,29 +130,65 @@ const RoomListTitle = styled.h3`
     }
 `;
 
-const RoomItem = styled.div`
+const RoomItem = styled.div<{ theme: typeof lightTheme }>`
     padding: 20px;
     border-radius: 16px;
     margin-bottom: 16px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background: white;
+    background: ${props => props.theme.colors.surface};
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
-    transition: all 0.3s ease;
-    border: 1px solid #e2e8f0;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    border: 1px solid ${props => props.theme.colors.border};
     cursor: pointer;
     z-index: 1;
+    position: relative;
+    overflow: hidden;
+
+    &::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(
+            45deg,
+            rgba(59, 130, 246, 0.1),
+            rgba(37, 99, 235, 0.1)
+        );
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
 
     &:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.06);
+        transform: translateY(-4px) scale(1.02);
+        box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
         border-color: #60a5fa;
+
+        &::before {
+            opacity: 1;
+        }
     }
 
-    &:last-child {
-        margin-bottom: 0;
+    &:active {
+        transform: translateY(-2px) scale(1.01);
     }
+
+    @keyframes slideIn {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    animation: slideIn 0.5s ease backwards;
+    animation-delay: calc(var(--index, 0) * 0.1s);
 `;
 
 const RoomInfo = styled.div`
@@ -173,6 +217,40 @@ const PlayerName = styled.div`
     }
 `;
 
+const RoomStatus = styled.div<{ status: 'open' | 'playing' | 'waiting' }>`
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 8px;
+    
+    ${props => {
+        switch (props.status) {
+            case 'open':
+                return `
+                    background: rgba(34, 197, 94, 0.1);
+                    color: #16a34a;
+                    &::before { content: '🟢'; }
+                `;
+            case 'playing':
+                return `
+                    background: rgba(239, 68, 68, 0.1);
+                    color: #dc2626;
+                    &::before { content: '🔴'; }
+                `;
+            case 'waiting':
+                return `
+                    background: rgba(234, 179, 8, 0.1);
+                    color: #ca8a04;
+                    &::before { content: '🟡'; }
+                `;
+        }
+    }}
+`;
+
 const JoinButton = styled.button`
     padding: 10px 16px;
     background: linear-gradient(135deg, #3b82f6, #2563eb);
@@ -182,17 +260,45 @@ const JoinButton = styled.button`
     cursor: pointer;
     font-weight: 500;
     font-size: 14px;
-    transition: all 0.2s ease;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     font-family: inherit;
     z-index: 2;
+    position: relative;
+    overflow: hidden;
+
+    &::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(
+            90deg,
+            transparent,
+            rgba(255, 255, 255, 0.2),
+            transparent
+        );
+        transition: left 0.5s ease;
+    }
 
     &:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+
+        &::before {
+            left: 100%;
+        }
     }
 
     &:active {
         transform: translateY(0);
+    }
+
+    &:disabled {
+        opacity: 0.7;
+        cursor: not-allowed;
+        transform: none;
     }
 `;
 
@@ -648,6 +754,153 @@ const GameGridScroller = styled.div<{ $isDragging: boolean }>`
     z-index: 1;
 `;
 
+const FilterContainer = styled.div`
+    display: flex;
+    gap: 12px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+`;
+
+const FilterSelect = styled.select`
+    padding: 8px 16px;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    background: white;
+    color: #1e293b;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:hover {
+        border-color: #94a3b8;
+    }
+
+    &:focus {
+        outline: none;
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+    }
+`;
+
+const FilterInput = styled.input`
+    padding: 8px 16px;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    background: white;
+    color: #1e293b;
+    font-size: 14px;
+    flex: 1;
+    min-width: 200px;
+
+    &:hover {
+        border-color: #94a3b8;
+    }
+
+    &:focus {
+        outline: none;
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+    }
+`;
+
+const GameTime = styled.div`
+    color: #64748b;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
+
+    .icon {
+        color: #94a3b8;
+    }
+
+    .time {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        
+        &::before {
+            content: '⌚';
+            font-size: 12px;
+        }
+    }
+
+    .duration {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        
+        &::before {
+            content: '⏱️';
+            font-size: 12px;
+        }
+    }
+`;
+
+const ThemeToggle = styled.button`
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: ${props => props.theme.mode === 'dark' 
+        ? 'linear-gradient(135deg, #1e293b, #0f172a)'
+        : 'linear-gradient(135deg, #f8fafc, #f1f5f9)'};
+    border: 1px solid ${props => props.theme.mode === 'dark' ? '#334155' : '#e2e8f0'};
+    color: ${props => props.theme.mode === 'dark' ? '#f1f5f9' : '#1e293b'};
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px ${props => props.theme.mode === 'dark' 
+        ? 'rgba(0, 0, 0, 0.3)' 
+        : 'rgba(0, 0, 0, 0.1)'};
+    z-index: 1000;
+
+    &:hover {
+        transform: translateY(-2px) rotate(8deg);
+        box-shadow: 0 8px 24px ${props => props.theme.mode === 'dark' 
+            ? 'rgba(0, 0, 0, 0.4)' 
+            : 'rgba(0, 0, 0, 0.15)'};
+    }
+
+    &:active {
+        transform: translateY(0) rotate(0);
+    }
+`;
+
+const darkTheme = {
+    mode: 'dark',
+    colors: {
+        background: '#0f172a',
+        surface: '#1e293b',
+        border: '#334155',
+        text: {
+            primary: '#f1f5f9',
+            secondary: '#94a3b8'
+        },
+        primary: '#3b82f6'
+    }
+};
+
+const lightTheme = {
+    mode: 'light',
+    colors: {
+        background: '#f8fafc',
+        surface: '#ffffff',
+        border: '#e2e8f0',
+        text: {
+            primary: '#1e293b',
+            secondary: '#64748b'
+        },
+        primary: '#3b82f6'
+    }
+};
+
 export const Game: React.FC = () => {
     const [tabId] = useState(() => Math.random().toString(36).substring(7));
     const [userId] = useState(() => localStorage.getItem('userId') || Math.random().toString(36).substring(7));
@@ -676,6 +929,12 @@ export const Game: React.FC = () => {
     const [replayMoves, setReplayMoves] = useState<{row: number, col: number, value: number}[]>([]);
     const [isAutoPlaying, setIsAutoPlaying] = useState(false);
     const autoPlayIntervalRef = useRef<NodeJS.Timeout>();
+    const [filterPlayer, setFilterPlayer] = useState('');
+    const [sortBy, setSortBy] = useState('newest');
+    const [theme, setTheme] = useState(() => {
+        const savedTheme = localStorage.getItem('theme');
+        return savedTheme === 'dark' ? darkTheme : lightTheme;
+    });
 
     useEffect(() => {
         localStorage.setItem('userId', userId);
@@ -798,7 +1057,7 @@ export const Game: React.FC = () => {
                 gameService.onAvailableRooms((rooms: GameType[]) => {
                     if (mounted && Array.isArray(rooms)) {
                         const availableRooms = rooms.filter(room => 
-                            room.status === "Waiting" && 
+                            (room.status === "Waiting" || room.status === "InProgress") && 
                             (room.player1Name !== playerName || (room.player1Name === playerName && room.player1Id !== userId))
                         );
                         setAvailableRooms(availableRooms);
@@ -823,7 +1082,7 @@ export const Game: React.FC = () => {
                 if (mounted) {
                     if (Array.isArray(initialRooms)) {
                         const availableRooms = initialRooms.filter(room => 
-                            room.status === "Waiting" && 
+                            (room.status === "Waiting" || room.status === "InProgress") && 
                             (room.player1Name !== playerName || (room.player1Name === playerName && room.player1Id !== userId))
                         );
                         setAvailableRooms(availableRooms);
@@ -1197,141 +1456,239 @@ export const Game: React.FC = () => {
         return { x, y, width, height };
     };
 
+    const formatDate = (date: string) => {
+        const d = new Date(date);
+        return new Intl.DateTimeFormat('vi-VN', {
+            hour: '2-digit',
+            minute: '2-digit',
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric'
+        }).format(d);
+    };
+
+    const formatDuration = (start: string, end: string) => {
+        const duration = new Date(end).getTime() - new Date(start).getTime();
+        const minutes = Math.floor(duration / 60000);
+        const seconds = Math.floor((duration % 60000) / 1000);
+        return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    };
+
+    const toggleTheme = () => {
+        const newTheme = theme.mode === 'dark' ? lightTheme : darkTheme;
+        setTheme(newTheme);
+        localStorage.setItem('theme', newTheme.mode);
+    };
+
+    const handleViewLiveGame = async (room: GameType) => {
+        try {
+            setCurrentGame(room);
+            setCurrentPlayerId(null);
+            localStorage.setItem(`currentGame_${tabId}`, JSON.stringify(room));
+        } catch (error) {
+            console.error('View live game error:', error);
+            gameService.showError('Không thể xem trận đấu');
+        }
+    };
+
     if (currentGame) {
         return (
-            <GameBoard 
-                game={currentGame}
-                currentPlayerId={currentPlayerId || undefined}
-                onCellClick={handleCellClick}
-                onExitRoom={handleExitRoom}
-            />
+            <ThemeProvider theme={theme}>
+                <GameContainer theme={theme}>
+                    <ThemeToggle onClick={toggleTheme} theme={theme}>
+                        {theme.mode === 'dark' ? '🌙' : '☀️'}
+                    </ThemeToggle>
+                    <GameBoard 
+                        game={currentGame}
+                        currentPlayerId={currentPlayerId ?? undefined}
+                        onCellClick={handleCellClick}
+                        onExitRoom={handleExitRoom}
+                        isSpectator={!currentPlayerId}
+                    />
+                </GameContainer>
+            </ThemeProvider>
         );
     }
 
     return (
-        <GameContainer>
-            {!currentGame && !selectedGame && (
-                <>
-            <JoinGameForm>
-                    <Input
-                        type="text"
-                            placeholder="Nhập tên của bạn"
-                        value={playerName}
-                        onChange={(e) => setPlayerName(e.target.value)}
+        <ThemeProvider theme={theme}>
+            <GameContainer theme={theme}>
+                <ThemeToggle onClick={toggleTheme} theme={theme}>
+                    {theme.mode === 'dark' ? '🌙' : '☀️'}
+                </ThemeToggle>
+                {!currentGame && !selectedGame && (
+                    <>
+                        <JoinGameForm>
+                            <Input
+                                type="text"
+                                placeholder="Nhập tên của bạn"
+                                value={playerName}
+                                onChange={(e) => setPlayerName(e.target.value)}
+                            />
+                            <Input
+                                type="text"
+                                placeholder="Nhập tên phòng"
+                                value={roomName}
+                                onChange={(e) => setRoomName(e.target.value)}
+                            />
+                            <Button onClick={handleCreateGame} disabled={isCreating}>
+                                {isCreating ? 'Đang tạo...' : 'Tạo phòng'}
+                            </Button>
+                        </JoinGameForm>
+
+                        <RoomListContainer>
+                            <RoomList theme={theme}>
+                                <RoomListTitle>
+                                    Danh sách phòng
+                                    <div className="shimmer"></div>
+                                </RoomListTitle>
+                                {availableRooms.map((room) => (
+                                    <RoomItem key={room.id}>
+                                        <RoomInfo>
+                                            <RoomName>{room.roomName}</RoomName>
+                                            <PlayerName>Chủ phòng: {room.player1Name}</PlayerName>
+                                            {room.status === "InProgress" && (
+                                                <PlayerName>Đối thủ: {room.player2Name}</PlayerName>
+                                            )}
+                                            <RoomStatus status={room.status === "InProgress" ? 'playing' : room.player1Name ? 'waiting' : 'open'}>
+                                                {room.status === "InProgress" ? 'Đang chơi' : room.player1Name ? 'Đang chờ' : 'Đang mở'}
+                                            </RoomStatus>
+                                        </RoomInfo>
+                                        {room.status === "InProgress" ? (
+                                            <JoinButton onClick={() => handleViewLiveGame(room)}>
+                                                Xem trận đấu
+                                            </JoinButton>
+                                        ) : (
+                                            <JoinButton onClick={() => handleJoinGame(room.roomName)} disabled={isJoining}>
+                                                {isJoining ? 'Đang vào...' : 'Vào phòng'}
+                                            </JoinButton>
+                                        )}
+                                    </RoomItem>
+                                ))}
+                                {availableRooms.length === 0 && (
+                                    <div style={{ textAlign: 'center', color: '#666' }}>
+                                        Không có phòng nào
+                                    </div>
+                                )}
+                            </RoomList>
+
+                            <RoomList>
+                                <RoomListTitle>
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                                        <path d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/>
+                                    </svg>
+                                    Lịch sử trận đấu ({finishedGames.length})
+                                </RoomListTitle>
+                                <FilterContainer>
+                                    <FilterInput
+                                        type="text"
+                                        placeholder="Tìm theo tên người chơi..."
+                                        value={filterPlayer}
+                                        onChange={(e) => setFilterPlayer(e.target.value)}
+                                    />
+                                    <FilterSelect value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
+                                        <option value="newest">Mới nhất</option>
+                                        <option value="oldest">Cũ nhất</option>
+                                        <option value="winner">Theo người thắng</option>
+                                    </FilterSelect>
+                                </FilterContainer>
+                                {finishedGames
+                                    .filter(game => 
+                                        !filterPlayer || 
+                                        (game.player1Name?.toLowerCase() || '').includes(filterPlayer.toLowerCase()) ||
+                                        (game.player2Name?.toLowerCase() || '').includes(filterPlayer.toLowerCase())
+                                    )
+                                    .sort((a, b) => {
+                                        switch (sortBy) {
+                                            case 'oldest':
+                                                return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+                                            case 'winner':
+                                                const getWinnerName = (game: GameType) => 
+                                                    game.winner === game.player1Id ? game.player1Name || '' : game.player2Name || '';
+                                                return getWinnerName(a).localeCompare(getWinnerName(b));
+                                            default: // newest
+                                                return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+                                        }
+                                    })
+                                    .map((game, index) => (
+                                        <RoomItem 
+                                            key={game.id} 
+                                            onClick={() => handleViewGameHistory(game)}
+                                            style={{ '--index': index } as React.CSSProperties}
+                                        >
+                                            <RoomInfo>
+                                                <RoomName>{game.roomName}</RoomName>
+                                                <PlayerName>
+                                                    {game.player1Name} vs {game.player2Name}
+                                                </PlayerName>
+                                                <FinishedGameInfo>
+                                                    Người thắng: <span className="winner">
+                                                        {game.winner === game.player1Id ? game.player1Name : game.player2Name}
+                                                    </span>
+                                                </FinishedGameInfo>
+                                                <GameTime>
+                                                    <span className="time">
+                                                        {formatDate(game.createdAt)}
+                                                    </span>
+                                                    <span className="duration">
+                                                        {formatDuration(game.createdAt, game.finishedAt)}
+                                                    </span>
+                                                </GameTime>
+                                            </RoomInfo>
+                                        </RoomItem>
+                                    ))}
+                                    {finishedGames.length === 0 && (
+                                        <div style={{ textAlign: 'center', color: '#666' }}>
+                                            Chưa có trận đấu nào kết thúc
+                                        </div>
+                                    )}
+                            </RoomList>
+                        </RoomListContainer>
+                    </>
+                )}
+
+                {currentGame && (
+                    <GameBoard
+                        game={currentGame}
+                        currentPlayerId={currentPlayerId ?? undefined}
+                        onCellClick={handleCellClick}
+                        onExitRoom={handleExitRoom}
+                        isSpectator={!currentPlayerId}
                     />
-                    <Input
-                        type="text"
-                            placeholder="Nhập tên phòng"
-                        value={roomName}
-                        onChange={(e) => setRoomName(e.target.value)}
-                        />
-                        <Button onClick={handleCreateGame} disabled={isCreating}>
-                            {isCreating ? 'Đang tạo...' : 'Tạo phòng'}
-                    </Button>
-            </JoinGameForm>
+                )}
 
-            <RoomListContainer>
-                <RoomList>
-                    <RoomListTitle>
-                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2zm-7-3.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z"/>
-                        </svg>
-                                Phòng có sẵn ({availableRooms.length})
-                    </RoomListTitle>
-                            {availableRooms.map((room) => (
-                            <RoomItem key={room.id}>
-                                <RoomInfo>
-                                        <RoomName>{room.roomName}</RoomName>
-                                        <PlayerName>Chủ phòng: {room.player1Name}</PlayerName>
-                                </RoomInfo>
-                                    <JoinButton onClick={() => handleJoinGame(room.roomName)} disabled={isJoining}>
-                                        {isJoining ? 'Đang vào...' : 'Vào phòng'}
-                                </JoinButton>
-                            </RoomItem>
-                            ))}
-                            {availableRooms.length === 0 && (
-                                <div style={{ textAlign: 'center', color: '#666' }}>
-                                    Không có phòng nào
-                                </div>
-                    )}
-                </RoomList>
-
-                <RoomList>
-                    <RoomListTitle>
-                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                                    <path d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/>
-                        </svg>
-                                Lịch sử trận đấu ({finishedGames.length})
-                    </RoomListTitle>
-                            {finishedGames.map((game) => (
-                                <RoomItem 
-                                    key={game.id} 
-                                    onClick={() => handleViewGameHistory(game)}
-                                    style={{ cursor: 'pointer' }}
-                                >
-                                <RoomInfo>
-                                        <RoomName>{game.roomName}</RoomName>
-                                        <PlayerName>
-                                        {game.player1Name} vs {game.player2Name}
-                                        </PlayerName>
-                                    <FinishedGameInfo>
-                                        Người thắng: <span className="winner">
-                                            {game.winner === game.player1Id ? game.player1Name : game.player2Name}
-                                        </span>
-                                    </FinishedGameInfo>
-                                </RoomInfo>
-                            </RoomItem>
-                            ))}
-                            {finishedGames.length === 0 && (
-                                <div style={{ textAlign: 'center', color: '#666' }}>
-                                    Chưa có trận đấu nào kết thúc
-                                </div>
-                    )}
-                </RoomList>
-            </RoomListContainer>
-                </>
-            )}
-
-            {currentGame && (
-                <GameBoard
-                    game={currentGame}
-                    currentPlayerId={currentPlayerId ?? undefined}
-                    onCellClick={handleCellClick}
-                    onExitRoom={handleExitRoom}
-                />
-            )}
-
-            {selectedGame && (
-                <GameReplayContainer>
-                    <GameReplayHeader>
-                        <div className="title">
-                            <h3>Chi tiết trận đấu</h3>
-                            <div className="info">
-                                <div className="item">
-                                    <span className="label">Phòng:</span>
-                                    {selectedGame.roomName}
-                                </div>
-                                <div className="item">
-                                    <span className="label">X:</span>
-                                    {selectedGame.player1Name}
-                                </div>
-                                <div className="item">
-                                    <span className="label">O:</span>
-                                    {selectedGame.player2Name}
-                                </div>
-                                <div className="item winner">
-                                    <span className="label">Thắng:</span>
-                                    {selectedGame.winner === selectedGame.player1Id ? selectedGame.player1Name : selectedGame.player2Name}
+                {selectedGame && (
+                    <GameReplayContainer>
+                        <GameReplayHeader>
+                            <div className="title">
+                                <h3>Chi tiết trận đấu</h3>
+                                <div className="info">
+                                    <div className="item">
+                                        <span className="label">Phòng:</span>
+                                        {selectedGame.roomName}
+                                    </div>
+                                    <div className="item">
+                                        <span className="label">X:</span>
+                                        {selectedGame.player1Name}
+                                    </div>
+                                    <div className="item">
+                                        <span className="label">O:</span>
+                                        {selectedGame.player2Name}
+                                    </div>
+                                    <div className="item winner">
+                                        <span className="label">Thắng:</span>
+                                        {selectedGame.winner === selectedGame.player1Id ? selectedGame.player1Name : selectedGame.player2Name}
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                        <button onClick={() => setSelectedGame(null)}>Quay lại</button>
-                    </GameReplayHeader>
-                    <GameReplayBoard>
-                        <HistoryBoard game={selectedGame} />
-                    </GameReplayBoard>
-                </GameReplayContainer>
-            )}
-        </GameContainer>
+                            <button onClick={() => setSelectedGame(null)}>Quay lại</button>
+                        </GameReplayHeader>
+                        <GameReplayBoard>
+                            <HistoryBoard game={selectedGame} />
+                        </GameReplayBoard>
+                    </GameReplayContainer>
+                )}
+            </GameContainer>
+        </ThemeProvider>
     );
 }; 

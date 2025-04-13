@@ -108,14 +108,75 @@ const Button = styled.button`
     }
 `;
 
-const CreateButton = styled(Button)`
-    align-self: flex-end;
-    min-width: 140px;
-    justify-content: center;
+const CreateRoomButton = styled(Button)`
+    margin: 0 auto 20px;
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+    border: none;
+    padding: 14px 28px;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    max-width: 800px;
+    width: fit-content;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s ease;
     
-    @media (max-width: 640px) {
-        align-self: stretch;
+    &::before {
+        content: '🎮';
+        font-size: 20px;
+        transition: transform 0.3s ease;
+        transform: translateY(-1px);
+        display: inline-flex;
+        align-items: center;
     }
+
+    &::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(
+            90deg,
+            transparent,
+            rgba(255, 255, 255, 0.2),
+            transparent
+        );
+        transition: left 0.5s ease;
+    }
+
+    &:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 10px 20px rgba(37, 99, 235, 0.3);
+        letter-spacing: 0.5px;
+
+        &::before {
+            transform: rotate(15deg) scale(1.2) translateY(-1px);
+        }
+
+        &::after {
+            left: 100%;
+        }
+    }
+
+    &:active {
+        transform: translateY(-1px);
+        box-shadow: 0 5px 10px rgba(37, 99, 235, 0.2);
+    }
+
+    @keyframes float {
+        0%, 100% {
+            transform: translateY(0);
+        }
+        50% {
+            transform: translateY(-5px);
+        }
+    }
+
+    animation: float 3s ease-in-out infinite;
 `;
 
 const RoomListContainer = styled.div`
@@ -954,27 +1015,6 @@ const lightTheme = {
         primary: '#3b82f6'
     }
 };
-
-const CreateRoomButton = styled(Button)`
-    margin-bottom: 20px;
-    background: linear-gradient(135deg, #3b82f6, #2563eb);
-    border: none;
-    padding: 16px 32px;
-    font-size: 16px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    
-    &::before {
-        content: '🎮';
-        font-size: 20px;
-    }
-
-    &:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 16px rgba(37, 99, 235, 0.2);
-    }
-`;
 
 const CreateRoomModal = styled(Modal)`
     .modal-content {
@@ -1902,14 +1942,14 @@ export const Game: React.FC = () => {
                                         <CancelButton onClick={() => setIsCreateModalOpen(false)}>
                                             Hủy
                                         </CancelButton>
-                                        <CreateButton onClick={() => {
+                                        <Button onClick={() => {
                                             handleCreateGame();
                                             if (!isCreating) {
                                                 setIsCreateModalOpen(false);
                                             }
                                         }} disabled={isCreating}>
                                             {isCreating ? 'Đang tạo...' : 'Tạo phòng'}
-                                        </CreateButton>
+                                        </Button>
                                     </div>
                                 </div>
                             </CreateRoomModal>
@@ -2098,9 +2138,9 @@ export const Game: React.FC = () => {
                                 }}>
                                     Hủy
                                 </CancelButton>
-                                <CreateButton onClick={handlePasswordSubmit}>
+                                <Button onClick={handlePasswordSubmit}>
                                     Xác nhận
-                                </CreateButton>
+                                </Button>
                             </div>
                         </div>
                     </PasswordDialog>

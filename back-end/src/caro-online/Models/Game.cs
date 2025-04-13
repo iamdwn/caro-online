@@ -18,6 +18,7 @@ namespace caro_online.Models
         public string CurrentTurn { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime? EndedAt { get; set; }
+        public string Duration { get; set; } = string.Empty;
         public bool Player1PlayAgain { get; set; }
         public bool Player2PlayAgain { get; set; }
 

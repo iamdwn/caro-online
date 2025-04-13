@@ -155,23 +155,13 @@ namespace caro_online.Services
                     game.Status = "Finished";
                     game.Winner = game.Player2Id;
                     game.EndedAt = DateTime.UtcNow;
-                    AddFinishedGame(game);
-                    await _hubContext.Clients.All.SendAsync("GameUpdated", game);
-                }
-                
-                _games.TryRemove(roomName, out _);
-                if (game.Status == "InProgress")
-                {
-                    game.Status = "Finished";
-                    game.Winner = game.Player2Id;
-                    game.EndedAt = DateTime.UtcNow;
+                    game.Duration = (game.EndedAt.Value - game.CreatedAt).ToString(@"mm\:ss");
                     AddFinishedGame(game);
                     await _hubContext.Clients.All.SendAsync("GameUpdated", game);
                 }
                 
                 _games.TryRemove(roomName, out _);
                 await _hubContext.Clients.All.SendAsync("GameDeleted", roomName);
-                await BroadcastAvailableRooms();
                 await BroadcastAvailableRooms();
             }
         }
@@ -195,12 +185,14 @@ namespace caro_online.Services
                         game.Status = "Finished";
                         game.Winner = game.Player2Id;
                         game.EndedAt = DateTime.UtcNow;
+                        game.Duration = (game.EndedAt.Value - game.CreatedAt).ToString(@"mm\:ss");
                     }
                     else if (game.Player2Id == userId)
                     {
                         game.Status = "Finished";
                         game.Winner = game.Player1Id;
                         game.EndedAt = DateTime.UtcNow;
+                        game.Duration = (game.EndedAt.Value - game.CreatedAt).ToString(@"mm\:ss");
                     }
 
                     AddFinishedGame(game);
@@ -318,6 +310,7 @@ namespace caro_online.Services
                     game.Winner = lastPlayerId;
                     game.Status = "Finished";
                     game.EndedAt = DateTime.UtcNow;
+                    game.Duration = (game.EndedAt.Value - game.CreatedAt).ToString(@"mm\:ss");
                     AddFinishedGame(game);
                     _games.TryRemove(game.RoomName, out _);
                     _ = _hubContext.Clients.All.SendAsync("GameFinished", game);
@@ -363,6 +356,11 @@ namespace caro_online.Services
 
         public void AddFinishedGame(Game game)
         {
+            if (string.IsNullOrEmpty(game.Duration))
+            {
+                game.Duration = (game.EndedAt.Value - game.CreatedAt).ToString(@"mm\:ss");
+            }
+
             var finishedGame = new Game
             {
                 Id = game.Id,
@@ -376,7 +374,8 @@ namespace caro_online.Services
                 Board = game.Board.ToArray(),
                 CurrentTurn = game.CurrentTurn,
                 CreatedAt = game.CreatedAt,
-                EndedAt = DateTime.UtcNow,
+                EndedAt = game.EndedAt,
+                Duration = game.Duration,
                 Player1PlayAgain = false,
                 Player2PlayAgain = false
             };

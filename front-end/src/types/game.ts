@@ -28,6 +28,8 @@ export interface Game {
     moves: Move[];
     createdAt: string;
     finishedAt: string;
+    endedAt: string | null;
+    duration: string | null;
 }
 
 export const BOARD_SIZE = 50;

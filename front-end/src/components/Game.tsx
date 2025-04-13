@@ -1468,10 +1468,13 @@ export const Game: React.FC = () => {
     };
 
     const formatDuration = (start: string, end: string) => {
-        const duration = new Date(end).getTime() - new Date(start).getTime();
+        if (!start || !end) return "00:00";
+        const startDate = new Date(start);
+        const endDate = new Date(end);
+        const duration = endDate.getTime() - startDate.getTime();
         const minutes = Math.floor(duration / 60000);
         const seconds = Math.floor((duration % 60000) / 1000);
-        return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+        return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
     };
 
     const toggleTheme = () => {
@@ -1606,7 +1609,7 @@ export const Game: React.FC = () => {
                                                 const getWinnerName = (game: GameType) => 
                                                     game.winner === game.player1Id ? game.player1Name || '' : game.player2Name || '';
                                                 return getWinnerName(a).localeCompare(getWinnerName(b));
-                                            default: // newest
+                                            default:
                                                 return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
                                         }
                                     })
@@ -1631,7 +1634,7 @@ export const Game: React.FC = () => {
                                                         {formatDate(game.createdAt)}
                                                     </span>
                                                     <span className="duration">
-                                                        {formatDuration(game.createdAt, game.finishedAt)}
+                                                        {game.duration || (game.endedAt && formatDuration(game.createdAt, game.endedAt)) || "00:00"}
                                                     </span>
                                                 </GameTime>
                                             </RoomInfo>

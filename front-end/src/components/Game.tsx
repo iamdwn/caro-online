@@ -1241,6 +1241,9 @@ export const Game: React.FC = () => {
                             if (exists) return prev;
                             return [game, ...prev];
                         });
+                        setShowPasswordDialog(false);
+                        setPasswordInput('');
+                        setSelectedRoomForPassword(null);
                     }
                 });
 
@@ -1655,21 +1658,11 @@ export const Game: React.FC = () => {
         localStorage.setItem('theme', newTheme.mode);
     };
 
-    const handleViewLiveGame = async (room: GameType, password: string = "") => {
+    const handleViewLiveGame = async (room: GameType) => {
         try {
-            if (room.hasPassword && !password) {
-                setSelectedRoomForPassword({
-                    roomName: room.roomName,
-                    action: 'view'
-                });
-                setShowPasswordDialog(true);
-                return;
-            }
-
-            const game = await gameService.joinGame(room.roomName, playerName, userId, password);
-            setCurrentGame(game);
+            setCurrentGame(room);
             setCurrentPlayerId(null);
-            localStorage.setItem(`currentGame_${tabId}`, JSON.stringify(game));
+            localStorage.setItem(`currentGame_${tabId}`, JSON.stringify(room));
         } catch (error) {
             console.error('View live game error:', error);
             gameService.showError('Không thể xem trận đấu');
@@ -1685,15 +1678,13 @@ export const Game: React.FC = () => {
             } else {
                 const room = availableRooms.find(r => r.roomName === selectedRoomForPassword.roomName);
                 if (room) {
-                    await handleViewLiveGame(room, passwordInput);
+                    await handleViewLiveGame(room);
                 }
             }
-            setShowPasswordDialog(false);
-            setPasswordInput('');
-            setSelectedRoomForPassword(null);
         } catch (error) {
             console.error('Password error:', error);
             gameService.showError('Mật khẩu không đúng');
+            setPasswordInput('');
         }
     };
 
@@ -1704,7 +1695,10 @@ export const Game: React.FC = () => {
                 action: 'join'
             });
             setShowPasswordDialog(true);
+            setPasswordInput('');
+            setIsJoining(false);
         } else {
+            setIsJoining(true);
             handleJoinGame(room.roomName);
         }
     };
@@ -1812,7 +1806,10 @@ export const Game: React.FC = () => {
                                             </RoomStatus>
                                         </RoomInfo>
                                         {room.status === "InProgress" ? (
-                                            <JoinButton onClick={() => handleViewLiveGame(room)}>
+                                            <JoinButton onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleViewLiveGame(room);
+                                            }}>
                                                 Xem trận đấu
                                             </JoinButton>
                                         ) : (

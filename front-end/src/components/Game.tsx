@@ -988,31 +988,45 @@ const ThemeToggle = styled.button`
     }
 `;
 
-const darkTheme = {
-    mode: 'dark',
+interface Theme {
+    mode: 'light' | 'dark';
     colors: {
-        background: '#0f172a',
-        surface: '#1e293b',
-        border: '#334155',
+        background: string;
+        surface: string;
+        border: string;
         text: {
-            primary: '#f1f5f9',
-            secondary: '#94a3b8'
+            primary: string;
+            secondary: string;
+        };
+        primary: string;
+    };
+}
+
+const lightTheme: Theme = {
+    mode: 'light',
+    colors: {
+        background: '#f5f5f5',
+        surface: '#ffffff',
+        border: '#e0e0e0',
+        text: {
+            primary: '#333333',
+            secondary: '#666666'
         },
-        primary: '#3b82f6'
+        primary: '#00a67e'
     }
 };
 
-const lightTheme = {
-    mode: 'light',
+const darkTheme: Theme = {
+    mode: 'dark',
     colors: {
-        background: '#f8fafc',
-        surface: '#ffffff',
-        border: '#e2e8f0',
+        background: '#1a1a1a',
+        surface: '#2d2d2d',
+        border: '#3d3d3d',
         text: {
-            primary: '#1e293b',
-            secondary: '#64748b'
+            primary: '#ffffff',
+            secondary: '#b0b0b0'
         },
-        primary: '#3b82f6'
+        primary: '#00a67e'
     }
 };
 
@@ -1231,24 +1245,301 @@ const CancelEditButton = styled(Button)`
     background: linear-gradient(135deg, #ef4444, #dc2626);
 `;
 
+const WelcomeContainer = styled.div`
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    height: 100vh;
+    background: ${props => props.theme.colors.background};
+    padding: 20px;
+    overflow: hidden;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+`;
+
+const WelcomeCard = styled.div`
+    background: ${props => props.theme.colors.surface};
+    border-radius: 20px;
+    padding: 40px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    text-align: center;
+    max-width: 500px;
+    width: 90%;
+    animation: fadeIn 0.5s ease-out;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    max-height: 95vh;
+    overflow-y: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    
+    &::-webkit-scrollbar {
+        display: none;
+    }
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+`;
+
+const Thumbnail = styled.div`
+    width: 400px;
+    height: 300px;
+    border-radius: 30px;
+    background: url('/thumbnail.jpg');
+    background-size: cover;
+    background-position: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 20px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 15px 30px rgba(0, 166, 126, 0.25);
+    transition: transform 0.4s ease, box-shadow 0.4s ease;
+
+    &:hover {
+        transform: translateY(-8px) scale(1.02);
+        box-shadow: 0 20px 40px rgba(0, 166, 126, 0.3);
+    }
+
+    &::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(135deg, rgba(0, 166, 126, 0.2), rgba(0, 196, 154, 0.2));
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+
+    &:hover::after {
+        opacity: 1;
+    }
+
+    &::before {
+        content: '';
+        position: absolute;
+        width: 150%;
+        height: 150%;
+        background: linear-gradient(
+            45deg,
+            transparent,
+            rgba(255, 255, 255, 0.2),
+            transparent
+        );
+        transform: rotate(45deg) translateX(-50%);
+        animation: shine 4s infinite;
+        z-index: 2;
+    }
+
+    @keyframes shine {
+        0% {
+            transform: rotate(45deg) translateX(-150%);
+        }
+        50% {
+            transform: rotate(45deg) translateX(150%);
+        }
+        100% {
+            transform: rotate(45deg) translateX(150%);
+        }
+    }
+`;
+
+const ThumbnailIcon = styled.div`
+    font-size: 80px;
+    color: white;
+    text-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    animation: float 3s infinite ease-in-out;
+
+    @keyframes float {
+        0%, 100% {
+            transform: translateY(0);
+        }
+        50% {
+            transform: translateY(-10px);
+        }
+    }
+`;
+
+const Logo = styled.div`
+    font-size: 48px;
+    margin-bottom: 20px;
+    color: ${props => props.theme.colors.primary};
+    font-weight: bold;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+`;
+
+const WelcomeTitle = styled.h1`
+    font-size: 36px;
+    color: ${props => props.theme.colors.text.primary};
+    margin: 0 0 15px 0;
+    font-weight: 700;
+    background: linear-gradient(135deg, #00a67e, #00c49a);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    position: relative;
+    text-align: center;
+    letter-spacing: 1px;
+    
+    &::after {
+        content: '';
+        position: absolute;
+        bottom: -8px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 60px;
+        height: 3px;
+        background: linear-gradient(90deg, #00a67e, #00c49a);
+        border-radius: 3px;
+    }
+
+    @keyframes titleAnimation {
+        0% {
+            opacity: 0;
+            transform: translateY(-20px);
+        }
+        100% {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    animation: titleAnimation 0.8s ease-out forwards;
+`;
+
+const WelcomeInput = styled.input`
+    width: 100%;
+    padding: 15px;
+    border: 2px solid ${props => props.theme.colors.border};
+    border-radius: 10px;
+    font-size: 16px;
+    background: ${props => props.theme.colors.surface};
+    color: ${props => props.theme.colors.text.primary};
+    margin-bottom: 20px;
+    transition: all 0.3s ease;
+
+    &:focus {
+        outline: none;
+        border-color: ${props => props.theme.colors.primary};
+        box-shadow: 0 0 0 2px ${props => props.theme.colors.primary}33;
+    }
+
+    &::placeholder {
+        color: ${props => props.theme.colors.text.secondary};
+    }
+`;
+
+const WelcomeButton = styled.button`
+    background: ${props => props.theme.colors.primary};
+    color: white;
+    border: none;
+    padding: 15px 30px;
+    border-radius: 10px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-weight: 500;
+
+    &:hover {
+        background: ${props => props.theme.colors.primary}dd;
+        transform: translateY(-2px);
+    }
+
+    &:active {
+        transform: translateY(0);
+    }
+`;
+
+const WelcomeDescription = styled.p`
+    color: ${props => props.theme.colors.text.secondary};
+    margin: 0 0 25px 0;
+    line-height: 1.8;
+    font-size: 16px;
+    max-width: 85%;
+    text-align: center;
+    opacity: 0;
+    animation: fadeInUp 0.8s ease-out forwards;
+    animation-delay: 0.2s;
+    position: relative;
+    padding: 15px 20px;
+    background: ${props => props.theme.mode === 'dark' ? 'rgba(0, 166, 126, 0.1)' : 'rgba(0, 196, 154, 0.05)'};
+    border-radius: 15px;
+    border: 1px solid ${props => props.theme.mode === 'dark' ? 'rgba(0, 166, 126, 0.2)' : 'rgba(0, 196, 154, 0.1)'};
+    box-shadow: 0 4px 6px ${props => props.theme.mode === 'dark' ? 'rgba(0, 0, 0, 0.2)' : 'rgba(0, 0, 0, 0.05)'};
+
+    @keyframes fadeInUp {
+        0% {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        100% {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @media (max-width: 768px) {
+        font-size: 14px;
+        padding: 12px 15px;
+        max-width: 95%;
+    }
+`;
+
+const ThemeToggleWelcome = styled.button`
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: transparent;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: ${props => props.theme.colors.text.primary};
+    transition: transform 0.3s ease;
+
+    &:hover {
+        transform: rotate(30deg);
+    }
+`;
+
+const generateUserId = () => {
+    const savedUserId = localStorage.getItem('userId');
+    if (savedUserId) return savedUserId;
+    const newUserId = Math.random().toString(36).substring(7);
+    localStorage.setItem('userId', newUserId);
+    return newUserId;
+};
+
 export const Game: React.FC = () => {
-    const [tabId] = useState(() => Math.random().toString(36).substring(7));
-    const [userId] = useState(() => localStorage.getItem('userId') || Math.random().toString(36).substring(7));
-    const [playerName, setPlayerName] = useState<string>(() => {
-        const savedName = localStorage.getItem('playerName');
-        return savedName || '';
+    const [theme, setTheme] = useState<Theme>(() => {
+        const savedTheme = localStorage.getItem('theme');
+        return savedTheme === 'dark' ? darkTheme : lightTheme;
     });
+    const [playerName, setPlayerName] = useState<string>(() => localStorage.getItem('playerName') || '');
+    const [inputPlayerName, setInputPlayerName] = useState('');
+    const [currentGame, setCurrentGame] = useState<GameType | null>(null);
+    const [currentPlayerId, setCurrentPlayerId] = useState<string | null>(null);
+    const [showBossDifficultyModal, setShowBossDifficultyModal] = useState(false);
+    const [isPlayingWithBot, setIsPlayingWithBot] = useState(false);
+    const [botDifficulty, setBotDifficulty] = useState<'easy' | 'hard'>('easy');
+    const [userId] = useState(generateUserId);
     const [roomName, setRoomName] = useState('');
+    const tabId = useRef(Math.random().toString(36).substring(7));
     const [availableRooms, setAvailableRooms] = useState<GameType[]>([]);
     const [finishedGames, setFinishedGames] = useState<GameType[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [currentGame, setCurrentGame] = useState<GameType | null>(() => {
-        const savedGame = localStorage.getItem(`currentGame_${tabId}`);
-        return savedGame ? JSON.parse(savedGame) : null;
-    });
-    const [currentPlayerId, setCurrentPlayerId] = useState<string | null>(() => 
-        localStorage.getItem(`currentPlayerId_${tabId}`)
-    );
     const [isCreating, setIsCreating] = useState(false);
     const [isJoining, setIsJoining] = useState(false);
     const [isMakingMove, setIsMakingMove] = useState(false);
@@ -1264,10 +1555,6 @@ export const Game: React.FC = () => {
     const autoPlayIntervalRef = useRef<NodeJS.Timeout>();
     const [filterPlayer, setFilterPlayer] = useState('');
     const [sortBy, setSortBy] = useState('newest');
-    const [theme, setTheme] = useState(() => {
-        const savedTheme = localStorage.getItem('theme');
-        return savedTheme === 'dark' ? darkTheme : lightTheme;
-    });
     const [password, setPassword] = useState('');
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [showPasswordDialog, setShowPasswordDialog] = useState(false);
@@ -1898,7 +2185,7 @@ export const Game: React.FC = () => {
     };
 
     const toggleTheme = () => {
-        const newTheme = theme.mode === 'dark' ? lightTheme : darkTheme;
+        const newTheme = theme.mode === 'light' ? darkTheme : lightTheme;
         setTheme(newTheme);
         localStorage.setItem('theme', newTheme.mode);
     };
@@ -1966,6 +2253,14 @@ export const Game: React.FC = () => {
         setTempPlayerName('');
     };
 
+    const handleSetPlayerName = () => {
+        if (inputPlayerName.trim()) {
+            localStorage.setItem('playerName', inputPlayerName.trim());
+            setPlayerName(inputPlayerName.trim());
+            setInputPlayerName('');
+        }
+    };
+
     if (currentGame) {
         return (
             <ThemeProvider theme={theme}>
@@ -1981,6 +2276,36 @@ export const Game: React.FC = () => {
                         isSpectator={!currentPlayerId}
                     />
                 </GameContainer>
+            </ThemeProvider>
+        );
+    }
+
+    if (!playerName) {
+        return (
+            <ThemeProvider theme={theme}>
+                <WelcomeContainer theme={theme}>
+                    <ThemeToggleWelcome onClick={toggleTheme} theme={theme}>
+                        {theme.mode === 'dark' ? '🌙' : '☀️'}
+                    </ThemeToggleWelcome>
+                    <WelcomeCard theme={theme}>
+                        <WelcomeTitle theme={theme}>Dozun Caro</WelcomeTitle>
+                        <WelcomeDescription theme={theme}>
+                            Vào đây thách đấu với bạn bè hoặc săn Boss nàoooo!
+                        </WelcomeDescription>
+                        <Thumbnail />
+                        <WelcomeInput
+                            type="text"
+                            placeholder="Nhập tên của bạn"
+                            value={inputPlayerName}
+                            onChange={(e) => setInputPlayerName(e.target.value)}
+                            onKeyPress={(e) => e.key === 'Enter' && handleSetPlayerName()}
+                            theme={theme}
+                        />
+                        <WelcomeButton onClick={handleSetPlayerName}>
+                            Bắt đầu chơi
+                        </WelcomeButton>
+                    </WelcomeCard>
+                </WelcomeContainer>
             </ThemeProvider>
         );
     }

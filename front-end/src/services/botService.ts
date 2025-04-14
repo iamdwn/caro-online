@@ -373,6 +373,7 @@ class HardBot implements BotStrategy {
                         score += this.evaluateDirection(board, row, col, dx, dy);
                     }
                 }
+
             }
         }
 

@@ -302,26 +302,26 @@ const PlayerSymbol = styled.div<{ isX?: boolean }>`
     }
 `;
 
-const PlayerName = styled.div<{ isActive?: boolean }>`
+const PlayerName = styled.div<{ $isActive?: boolean }>`
     font-size: 18px;
     font-weight: 500;
     font-family: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
-    color: ${props => props.isActive ? '#1e293b' : '#64748b'};
+    color: ${props => props.$isActive ? '#1e293b' : '#64748b'};
     margin-bottom: 8px;
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
     transition: all 0.3s ease;
     letter-spacing: -0.02em;
     
     &:hover {
-        color: ${props => props.isActive ? '#0f172a' : '#475569'};
+        color: ${props => props.$isActive ? '#0f172a' : '#475569'};
         transform: translateY(-1px);
     }
 `;
 
-const PlayerLabel = styled.div<{ isActive?: boolean }>`
+const PlayerLabel = styled.div<{ $isActive?: boolean }>`
     font-size: 13px;
     font-family: 'Outfit', 'Inter', system-ui, sans-serif;
-    color: ${props => props.isActive ? '#3b82f6' : '#94a3b8'};
+    color: ${props => props.$isActive ? '#3b82f6' : '#94a3b8'};
     margin-bottom: 16px;
     text-transform: uppercase;
     letter-spacing: 0.1em;
@@ -335,22 +335,22 @@ const PlayerLabel = styled.div<{ isActive?: boolean }>`
     }
 `;
 
-const PlayerStatus = styled.div<{ isActive?: boolean }>`
+const PlayerStatus = styled.div<{ $isActive?: boolean }>`
     font-size: 14px;
     font-family: 'Be Vietnam Pro', 'Inter', system-ui, sans-serif;
     padding: 10px 20px;
-    background: ${props => props.isActive 
+    background: ${props => props.$isActive 
         ? 'linear-gradient(135deg, rgba(59, 130, 246, 0.08), rgba(37, 99, 235, 0.08))'
         : 'linear-gradient(135deg, rgba(241, 245, 249, 0.6), rgba(248, 250, 252, 0.6))'
     };
-    color: ${props => props.isActive ? '#2563eb' : '#64748b'};
+    color: ${props => props.$isActive ? '#2563eb' : '#64748b'};
     border-radius: 12px;
     display: inline-flex;
     align-items: center;
     gap: 8px;
     margin-top: auto;
     backdrop-filter: blur(8px);
-    box-shadow: ${props => props.isActive 
+    box-shadow: ${props => props.$isActive 
         ? 'inset 0 0 0 1px rgba(59, 130, 246, 0.15), 0 2px 8px rgba(59, 130, 246, 0.08)'
         : 'inset 0 0 0 1px rgba(241, 245, 249, 0.15), 0 2px 8px rgba(0, 0, 0, 0.02)'
     };
@@ -359,7 +359,7 @@ const PlayerStatus = styled.div<{ isActive?: boolean }>`
 
     &:hover {
         transform: translateY(-2px);
-        box-shadow: ${props => props.isActive 
+        box-shadow: ${props => props.$isActive 
             ? 'inset 0 0 0 1px rgba(59, 130, 246, 0.2), 0 4px 12px rgba(59, 130, 246, 0.12)'
             : 'inset 0 0 0 1px rgba(241, 245, 249, 0.2), 0 4px 12px rgba(0, 0, 0, 0.04)'
         };
@@ -984,14 +984,14 @@ export const Board: React.FC<BoardProps> = ({ game, currentPlayerId, onCellClick
                         >
                             <PlayerAvatar isHost={true} />
                             <PlayerSymbol isX={true}>X</PlayerSymbol>
-                            <PlayerLabel isActive={isPlayer1 || game.winner === game.player1Id}>
+                            <PlayerLabel $isActive={isPlayer1 || game.winner === game.player1Id}>
                                 Người chơi 1
                             </PlayerLabel>
-                            <PlayerName isActive={isPlayer1 || game.winner === game.player1Id}>
+                            <PlayerName $isActive={isPlayer1 || game.winner === game.player1Id}>
                                 {game.player1Name} {isPlayer1 && !isSpectator && '(Bạn)'}
                             </PlayerName>
                             {game.status === "InProgress" && isPlayer1 && !isSpectator && (
-                                <PlayerStatus isActive={true}>
+                                <PlayerStatus $isActive={true}>
                                     {isMyTurn ? <><span className="controller">🎮</span> Đến lượt bạn</> : <><span className="waiting">⌛</span> Chờ đối thủ</>}
                                 </PlayerStatus>
                             )}
@@ -1004,16 +1004,16 @@ export const Board: React.FC<BoardProps> = ({ game, currentPlayerId, onCellClick
                         >
                             <PlayerAvatar isHost={false} />
                             <PlayerSymbol isX={false}>O</PlayerSymbol>
-                            <PlayerLabel isActive={!isPlayer1 || game.winner === game.player2Id}>
+                            <PlayerLabel $isActive={!isPlayer1 || game.winner === game.player2Id}>
                                 Người chơi 2
                             </PlayerLabel>
                             {game.player2Name ? (
                                 <>
-                                    <PlayerName isActive={!isPlayer1 || game.winner === game.player2Id}>
+                                    <PlayerName $isActive={!isPlayer1 || game.winner === game.player2Id}>
                                         {game.player2Name} {!isPlayer1 && !isSpectator && '(Bạn)'}
                                     </PlayerName>
                                     {game.status === "InProgress" && !isPlayer1 && !isSpectator && (
-                                        <PlayerStatus isActive={true}>
+                                        <PlayerStatus $isActive={true}>
                                             {isMyTurn ? <><span className="controller">🎮</span> Đến lượt bạn</> : <><span className="waiting">⌛</span> Chờ đối thủ</>}
                                         </PlayerStatus>
                                     )}

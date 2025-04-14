@@ -5,6 +5,9 @@ import { GameStatus, parseBoard, type Board, type BoardCell } from '../types/gam
 import { gameService } from '../services/gameService';
 import { Board as GameBoard } from './Board';
 import { HistoryBoard } from './HistoryBoard';
+import { BotService, BotDifficulty } from '../services/botService';
+import { HubConnection } from '@microsoft/signalr';
+import { useNavigate } from 'react-router-dom';
 
 const GameContainer = styled.div<{ theme: typeof lightTheme }>`
     min-height: 100vh;
@@ -1162,7 +1165,15 @@ const ViewerCount = styled.div`
     }
 `;
 
-export const Game: React.FC = () => {
+interface GameProps {
+    connection: HubConnection | null;
+    roomId: string;
+    isHost: boolean;
+    isBotMode?: boolean;
+    botDifficulty?: BotDifficulty;
+}
+
+const Game: React.FC<GameProps> = ({ connection, roomId, isHost, isBotMode = false, botDifficulty = BotDifficulty.MEDIUM }) => {
     const [tabId] = useState(() => Math.random().toString(36).substring(7));
     const [userId] = useState(() => localStorage.getItem('userId') || Math.random().toString(36).substring(7));
     const [playerName, setPlayerName] = useState(() => localStorage.getItem('playerName') || '');
@@ -1204,6 +1215,13 @@ export const Game: React.FC = () => {
         action: 'join' | 'view';
     } | null>(null);
     const [passwordInput, setPasswordInput] = useState('');
+    const [board, setBoard] = useState<number[]>(Array(2500).fill(0));
+    const [currentPlayer, setCurrentPlayer] = useState<number>(1);
+    const [lastMove, setLastMove] = useState<{ row: number, col: number } | null>(null);
+    const [gameOver, setGameOver] = useState<boolean>(false);
+    const [winner, setWinner] = useState<number | null>(null);
+    const navigate = useNavigate();
+    const [showDifficultyModal, setShowDifficultyModal] = useState(false);
 
     useEffect(() => {
         localStorage.setItem('userId', userId);
@@ -1491,16 +1509,53 @@ export const Game: React.FC = () => {
     };
 
     const handleCellClick = async (row: number, col: number) => {
-        if (!currentGame || !currentPlayerId || isMakingMove) return;
-        
-        try {
-            setIsMakingMove(true);
-            await gameService.makeMove(currentGame.id, currentPlayerId, row, col);
-        } catch (error) {
-            console.error('Make move error:', error);
-            gameService.showError('Không thể đánh vào ô này');
-        } finally {
-            setIsMakingMove(false);
+        if (gameOver || board[row * 50 + col] !== 0 || (currentPlayer === 2 && !isBotMode && !isHost)) {
+            return;
+        }
+
+        const newBoard = [...board];
+        newBoard[row * 50 + col] = currentPlayer;
+        setBoard(newBoard);
+        setLastMove({ row, col });
+
+        if (checkWin(newBoard, row, col, currentPlayer)) {
+            setGameOver(true);
+            setWinner(currentPlayer);
+            playWinSound();
+            return;
+        }
+
+        if (isBotMode && currentPlayer === 1) {
+            // Nếu là lượt người chơi và đang ở chế độ bot
+            setCurrentPlayer(2);
+            // Cho bot đánh sau 500ms để tạo cảm giác tự nhiên
+            setTimeout(() => {
+                const botService = BotService.getInstance();
+                const botMove = botService.makeMove(newBoard, botDifficulty, { row, col });
+                
+                const newBoardAfterBot = [...newBoard];
+                newBoardAfterBot[botMove.row * 50 + botMove.col] = 2;
+                setBoard(newBoardAfterBot);
+                setLastMove(botMove);
+
+                if (checkWin(newBoardAfterBot, botMove.row, botMove.col, 2)) {
+                    setGameOver(true);
+                    setWinner(2);
+                    playWinSound();
+                } else {
+                    setCurrentPlayer(1);
+                }
+            }, 500);
+        } else {
+            // Chế độ chơi online
+            setCurrentPlayer(currentPlayer === 1 ? 2 : 1);
+            if (connection) {
+                try {
+                    await connection.invoke("MakeMove", roomId, row, col);
+                } catch (error) {
+                    console.error("Error making move:", error);
+                }
+            }
         }
     };
 
@@ -1874,6 +1929,43 @@ export const Game: React.FC = () => {
         }
     };
 
+    const playWinSound = () => {
+        const audio = new Audio('/sounds/win.mp3');
+        audio.play().catch(error => console.log('Error playing sound:', error));
+    };
+
+    const resetGame = () => {
+        setBoard(Array(2500).fill(0));
+        setCurrentPlayer(1);
+        setGameOver(false);
+        setWinner(null);
+    };
+
+    const startBotGame = (difficulty: BotDifficulty) => {
+        const now = new Date().toISOString();
+        setCurrentGame({
+            id: Math.random().toString(),
+            roomName: `Bot Game - ${difficulty}`,
+            player1Name: playerName || 'Player',
+            player2Name: 'Bot',
+            player1Id: userId,
+            player2Id: 'bot',
+            board: Array(2500).fill(0),
+            status: GameStatus.InProgress,
+            createdAt: now,
+            finishedAt: '',
+            endedAt: '',
+            duration: '0',
+            hasPassword: false,
+            viewerCount: 0,
+            currentTurn: userId,
+            winner: null,
+            moves: []
+        });
+        setCurrentPlayerId(userId);
+        setShowDifficultyModal(false);
+    };
+
     if (currentGame) {
         return (
             <ThemeProvider theme={theme}>
@@ -1904,6 +1996,40 @@ export const Game: React.FC = () => {
                         <CreateRoomButton onClick={() => setIsCreateModalOpen(true)}>
                             Tạo phòng mới
                         </CreateRoomButton>
+                        <PlayWithBotButton onClick={() => setShowDifficultyModal(true)}>
+                            Chơi với máy
+                        </PlayWithBotButton>
+
+                        {showDifficultyModal && (
+                            <DifficultyModal>
+                                <div className="modal-content">
+                                    <h3>Chọn độ khó</h3>
+                                    <div className="difficulty-buttons">
+                                        <DifficultyButton 
+                                            $difficulty="easy"
+                                            onClick={() => startBotGame(BotDifficulty.EASY)}
+                                        >
+                                            Dễ
+                                        </DifficultyButton>
+                                        <DifficultyButton 
+                                            $difficulty="medium"
+                                            onClick={() => startBotGame(BotDifficulty.MEDIUM)}
+                                        >
+                                            Trung bình
+                                        </DifficultyButton>
+                                        <DifficultyButton 
+                                            $difficulty="hard"
+                                            onClick={() => startBotGame(BotDifficulty.HARD)}
+                                        >
+                                            Khó
+                                        </DifficultyButton>
+                                    </div>
+                                    <CancelButton onClick={() => setShowDifficultyModal(false)}>
+                                        Hủy
+                                    </CancelButton>
+                                </div>
+                            </DifficultyModal>
+                        )}
 
                         {isCreateModalOpen && (
                             <CreateRoomModal>
@@ -2148,4 +2274,110 @@ export const Game: React.FC = () => {
             </GameContainer>
         </ThemeProvider>
     );
-}; 
+};
+
+const checkWin = (board: number[], row: number, col: number, player: number): boolean => {
+    const directions = [
+        [0, 1],  // horizontal
+        [1, 0],  // vertical
+        [1, 1],  // diagonal
+        [1, -1]  // anti-diagonal
+    ];
+
+    for (const [dx, dy] of directions) {
+        let count = 1;
+        
+        // Check forward direction
+        for (let i = 1; i < 5; i++) {
+            const newRow = row + dx * i;
+            const newCol = col + dy * i;
+            if (newRow < 0 || newRow >= 50 || newCol < 0 || newCol >= 50) break;
+            if (board[newRow * 50 + newCol] !== player) break;
+            count++;
+        }
+        
+        // Check backward direction
+        for (let i = 1; i < 5; i++) {
+            const newRow = row - dx * i;
+            const newCol = col - dy * i;
+            if (newRow < 0 || newRow >= 50 || newCol < 0 || newCol >= 50) break;
+            if (board[newRow * 50 + newCol] !== player) break;
+            count++;
+        }
+
+        if (count >= 5) return true;
+    }
+    return false;
+};
+
+const PlayWithBotButton = styled(CreateRoomButton)`
+    background: linear-gradient(135deg, #10b981, #059669);
+    margin-bottom: 20px;
+    
+    &:hover {
+        background: linear-gradient(135deg, #059669, #047857);
+    }
+
+    &::before {
+        content: '🤖';
+    }
+`;
+
+const DifficultyModal = styled(Modal)`
+    .modal-content {
+        max-width: 400px;
+        max-height: 300px;
+        padding: 32px;
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+    }
+
+    h3 {
+        margin: 0;
+        font-size: 24px;
+        color: ${props => props.theme.colors.text.primary};
+        display: flex;
+        align-items: center;
+        gap: 12px;
+
+        &::before {
+            content: '🤖';
+            font-size: 28px;
+        }
+    }
+
+    .difficulty-buttons {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+`;
+
+const DifficultyButton = styled(Button)<{ $difficulty: string }>`
+    background: ${props => {
+        switch (props.$difficulty) {
+            case 'easy': return 'linear-gradient(135deg, #22c55e, #16a34a)';
+            case 'medium': return 'linear-gradient(135deg, #f59e0b, #d97706)';
+            case 'hard': return 'linear-gradient(135deg, #ef4444, #dc2626)';
+            default: return props.theme.colors.primary;
+        }
+    }};
+    justify-content: center;
+    font-size: 16px;
+    padding: 16px;
+
+    &::before {
+        content: ${props => {
+            switch (props.$difficulty) {
+                case 'easy': return '"🌱"';
+                case 'medium': return '"🌟"';
+                case 'hard': return '"🔥"';
+                default: return '""';
+            }
+        }};
+        font-size: 20px;
+    }
+`;
+
+export { Game };

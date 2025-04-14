@@ -1162,10 +1162,82 @@ const ViewerCount = styled.div`
     }
 `;
 
+const PlayerNameContainer = styled.div`
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    z-index: 1000;
+    background: ${props => props.theme.colors.surface};
+    padding: 12px;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    border: 1px solid ${props => props.theme.colors.border};
+`;
+
+const PlayerNameDisplay = styled.div`
+    font-size: 16px;
+    font-weight: 500;
+    color: ${props => props.theme.colors.text.primary};
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    &::before {
+        content: '👤';
+        font-size: 18px;
+    }
+`;
+
+const EditButton = styled.button`
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: ${props => props.theme.colors.text.secondary};
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+
+    &:hover {
+        color: ${props => props.theme.colors.text.primary};
+        transform: scale(1.1);
+    }
+
+    &::before {
+        content: '✏️';
+        font-size: 16px;
+    }
+`;
+
+const PlayerNameInput = styled(Input)`
+    width: 150px;
+    padding: 8px 12px;
+    font-size: 14px;
+`;
+
+const ConfirmButton = styled(Button)`
+    padding: 8px 12px;
+    font-size: 14px;
+    background: linear-gradient(135deg, #22c55e, #16a34a);
+`;
+
+const CancelEditButton = styled(Button)`
+    padding: 8px 12px;
+    font-size: 14px;
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+`;
+
 export const Game: React.FC = () => {
     const [tabId] = useState(() => Math.random().toString(36).substring(7));
     const [userId] = useState(() => localStorage.getItem('userId') || Math.random().toString(36).substring(7));
-    const [playerName, setPlayerName] = useState(() => localStorage.getItem('playerName') || '');
+    const [playerName, setPlayerName] = useState<string>(() => {
+        const savedName = localStorage.getItem('playerName');
+        return savedName || '';
+    });
     const [roomName, setRoomName] = useState('');
     const [availableRooms, setAvailableRooms] = useState<GameType[]>([]);
     const [finishedGames, setFinishedGames] = useState<GameType[]>([]);
@@ -1204,6 +1276,8 @@ export const Game: React.FC = () => {
         action: 'join' | 'view';
     } | null>(null);
     const [passwordInput, setPasswordInput] = useState('');
+    const [isEditingName, setIsEditingName] = useState(false);
+    const [tempPlayerName, setTempPlayerName] = useState('');
 
     useEffect(() => {
         localStorage.setItem('userId', userId);
@@ -1874,6 +1948,24 @@ export const Game: React.FC = () => {
         }
     };
 
+    const handleEditName = () => {
+        setTempPlayerName(playerName);
+        setIsEditingName(true);
+    };
+
+    const handleConfirmEdit = () => {
+        if (tempPlayerName.trim()) {
+            setPlayerName(tempPlayerName.trim());
+            localStorage.setItem('playerName', tempPlayerName.trim());
+        }
+        setIsEditingName(false);
+    };
+
+    const handleCancelEdit = () => {
+        setIsEditingName(false);
+        setTempPlayerName('');
+    };
+
     if (currentGame) {
         return (
             <ThemeProvider theme={theme}>
@@ -1899,7 +1991,35 @@ export const Game: React.FC = () => {
                 <ThemeToggle onClick={toggleTheme} theme={theme}>
                     {theme.mode === 'dark' ? '🌙' : '☀️'}
                 </ThemeToggle>
-                {!currentGame && !selectedGame && (
+
+                <PlayerNameContainer>
+                    {!playerName || isEditingName ? (
+                        <>
+                            <PlayerNameInput
+                                type="text"
+                                placeholder="Nhập tên của bạn"
+                                value={!playerName ? tempPlayerName : tempPlayerName}
+                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTempPlayerName(e.target.value)}
+                                onKeyPress={(e: React.KeyboardEvent) => e.key === 'Enter' && handleConfirmEdit()}
+                            />
+                            <ConfirmButton onClick={handleConfirmEdit}>
+                                OK
+                            </ConfirmButton>
+                            {isEditingName && (
+                                <CancelEditButton onClick={handleCancelEdit}>
+                                    Huỷ
+                                </CancelEditButton>
+                            )}
+                        </>
+                    ) : (
+                        <>
+                            <PlayerNameDisplay>{playerName}</PlayerNameDisplay>
+                            <EditButton onClick={handleEditName} />
+                        </>
+                    )}
+                </PlayerNameContainer>
+
+                {playerName && !currentGame && !selectedGame && (
                     <>
                         <CreateRoomButton onClick={() => setIsCreateModalOpen(true)}>
                             Tạo phòng mới
@@ -1910,15 +2030,6 @@ export const Game: React.FC = () => {
                                 <div className="modal-content">
                                     <h2>Tạo phòng mới</h2>
                                     <div className="form-group">
-                                        <div className="input-group">
-                                            <label>Tên người chơi</label>
-                                            <Input
-                                                type="text"
-                                                placeholder="Nhập tên của bạn"
-                                                value={playerName}
-                                                onChange={(e) => setPlayerName(e.target.value)}
-                                            />
-                                        </div>
                                         <div className="input-group">
                                             <label>Tên phòng</label>
                                             <Input

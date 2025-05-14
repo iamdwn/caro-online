@@ -7,9 +7,9 @@ services:
       dockerfile: back-end/src/caro-online/Dockerfile
     ports:
       - "5000:8080"
-    container_name: caro_backend
+    container_name: minidozun_backend
     networks:
-      - caro_network
+      - minidozun_network
     environment:
       - ASPNETCORE_URLS=http://+:8080
 
@@ -19,14 +19,14 @@ services:
       dockerfile: Dockerfile
     ports:
       - "3000:80"
-    container_name: caro_frontend
+    container_name: minidozun_frontend
     depends_on:
       - backend
     environment:
-      - REACT_APP_API_BASE_URL=https://caro-be.iamdwn.dev/gameHub 
+      - REACT_APP_API_BASE_URL=https://minidozun-be.iamdwn.dev/gameHub 
     networks:
-      - caro_network
+      - minidozun_network
 
 networks:
-  caro_network:
+  minidozun_network:
     driver: bridge

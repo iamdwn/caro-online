@@ -8,14 +8,14 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
-    c.SwaggerDoc("v1", new OpenApiInfo { Title = "Caro Online API", Version = "v1" });
+    c.SwaggerDoc("v1", new OpenApiInfo { Title = "Minidozun Online API", Version = "v1" });
 });
 
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.WithOrigins("http://localhost:3002", "https://caro.iamdwn.dev", "https://www.caro.iamdwn.dev")
+        policy.WithOrigins("http://localhost:3002", "https://minidozun.iamdwn.dev", "https://www.minidozun.iamdwn.dev")
               .AllowAnyMethod()
               .AllowAnyHeader()
               .AllowCredentials();

@@ -19,7 +19,7 @@ class GameService {
         if (this.connection) return;
 
         // const apiUrl = process.env.REACT_APP_API_BASE_URL;
-        const apiUrl = 'https://caro-be.iamdwn.dev';
+        const apiUrl = 'https://minidozun-be.iamdwn.dev';
         // const apiUrl = 'http://localhost:5071';
 
         if (!apiUrl) {

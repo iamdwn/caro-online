@@ -26,17 +26,6 @@ services:
       - REACT_APP_API_BASE_URL=https://minidozun-be.iamdwn.dev/gameHub 
     networks:
       - minidozun_network
-  nginx:
-    image: nginx:latest
-    container_name: minidozun_nginx
-    ports:
-      - "80:80"
-      - "443:443"
-    depends_on:
-      - backend
-      - frontend
-    networks:
-      - minidozun_network
 
 networks:
   minidozun_network:

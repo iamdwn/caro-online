@@ -2288,7 +2288,7 @@ export const Game: React.FC = () => {
                         {theme.mode === 'dark' ? '🌙' : '☀️'}
                     </ThemeToggleWelcome>
                     <WelcomeCard theme={theme}>
-                        <WelcomeTitle theme={theme}>Dozun Caro</WelcomeTitle>
+                        <WelcomeTitle theme={theme}>Mini Dozun</WelcomeTitle>
                         <WelcomeDescription theme={theme}>
                             Vào đây thách đấu với bạn bè hoặc săn Boss nàoooo!
                         </WelcomeDescription>

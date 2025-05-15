@@ -1,6 +1,6 @@
-# Game Caro Online - Frontend
+# Game MiniDozun Online - Frontend
 
-Frontend của game Caro Online được xây dựng bằng React và TypeScript.
+Frontend của game MiniDozun Online được xây dựng bằng React và TypeScript.
 
 ## Tính năng
 

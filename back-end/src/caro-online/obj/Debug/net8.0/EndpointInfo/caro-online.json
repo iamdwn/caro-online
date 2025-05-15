@@ -1,7 +1,7 @@
 {
   "openapi": "3.0.1",
   "info": {
-    "title": "Caro Online API",
+    "title": "Minidozun Online API",
     "version": "v1"
   },
   "paths": { },

@@ -1,9 +1,9 @@
 {
-  "short_name": "Caro Online",
-  "name": "Game Caro Online",
+  "short_name": "Mini Dozun Online",
+  "name": "Mini Dozun Online",
   "icons": [
     {
-      "src": "favicon.ico",
+      "src": "dozun_ne.jpg",
       "sizes": "64x64 32x32 24x24 16x16",
       "type": "image/x-icon"
     },

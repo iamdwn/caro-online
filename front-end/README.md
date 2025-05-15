@@ -1,6 +1,6 @@
-# Game MiniDozun Online - Frontend
+# Game Mini Dozun Online - Frontend
 
-Frontend của game MiniDozun Online được xây dựng bằng React và TypeScript.
+Frontend của game Mini Dozun Online được xây dựng bằng React và TypeScript.
 
 ## Tính năng
 
